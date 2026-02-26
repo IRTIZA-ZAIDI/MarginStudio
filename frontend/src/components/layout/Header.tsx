@@ -74,52 +74,59 @@ export function Header() {
         <div className="h-6 w-px bg-border/60 mx-1 hidden sm:block" />
 
         {/* Workspace Selector */}
-        {isEditingWS ? (
-            <input 
-                autoFocus
-                className="bg-secondary/50 border-none outline-none px-2 py-1 h-9 rounded-xl text-[10px] font-black uppercase tracking-widest w-40 text-center"
-                value={wsName}
-                onChange={(e) => setWsName(e.target.value)}
-                onBlur={handleRename}
-                onKeyDown={(e) => e.key === 'Enter' && handleRename()}
-            />
-        ) : (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button 
-                    variant="ghost" 
-                    onDoubleClick={() => setIsEditingWS(true)}
-                    className="h-9 gap-3 px-3 rounded-xl hover:bg-secondary font-black text-[10px] uppercase tracking-[0.15em] text-muted-foreground/80 group"
-                >
-                  <LayoutGrid className="h-3.5 w-3.5 text-primary/60" />
-                  {activeWS?.name || "Workspace"}
-                  <div 
-                    onClick={(e) => { e.stopPropagation(); setIsEditingWS(true); }}
-                    className="ml-1 p-1 rounded-md hover:bg-primary/10 text-muted-foreground/0 group-hover:text-primary transition-all cursor-pointer"
-                  >
-                    <PencilLine className="h-3 w-3" />
-                  </div>
-                  <ChevronDown className="h-3 w-3 opacity-50" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="start" className="rounded-xl p-2 border-border shadow-2xl backdrop-blur-xl w-56">
-                <div className="px-2 py-1.5 text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/50">Your Workspaces</div>
-                {workspaces.map(ws => (
-                  <DropdownMenuItem key={ws.id} onClick={() => setActiveWorkspace(ws.id)} className="rounded-lg gap-2 font-bold text-xs p-3">
-                    <div className={cn("w-1.5 h-1.5 rounded-full", ws.id === activeWorkspaceId ? "bg-primary" : "bg-transparent")} />
-                    {ws.name}
-                  </DropdownMenuItem>
-                ))}
-                <div className="border-t border-border/50 my-1" />
-                <DropdownMenuItem 
-                    className="rounded-lg gap-2 font-bold text-xs p-3 text-primary"
-                    onClick={() => setShowNewModal(true)}
-                >
-                  <Plus className="h-3.5 w-3.5" /> NEW WORKSPACE
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-        )}
+        <div className="flex items-center gap-1 group/ws relative">
+            {isEditingWS ? (
+                <input 
+                    autoFocus
+                    className="bg-secondary/80 border-primary/20 outline-none px-3 py-1.5 h-9 rounded-xl text-[10px] font-black uppercase tracking-widest w-48 text-center ring-2 ring-primary/10"
+                    value={wsName}
+                    onChange={(e) => setWsName(e.target.value)}
+                    onBlur={handleRename}
+                    onKeyDown={(e) => e.key === 'Enter' && handleRename()}
+                />
+            ) : (
+                <div className="flex items-center">
+                    <button
+                        onDoubleClick={() => setIsEditingWS(true)}
+                        className="h-9 gap-2 px-3 rounded-l-xl hover:bg-secondary font-black text-[10px] uppercase tracking-[0.15em] text-muted-foreground/80 flex items-center transition-all"
+                    >
+                        <LayoutGrid className="h-3.5 w-3.5 text-primary/60" />
+                        {activeWS?.name || "Workspace"}
+                        <PencilLine 
+                            onClick={(e) => { e.stopPropagation(); setIsEditingWS(true); }}
+                            className="h-3 w-3 ml-2 text-primary opacity-0 group-hover/ws:opacity-100 transition-all cursor-pointer" 
+                        />
+                    </button>
+                    
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button 
+                            variant="ghost" 
+                            className="h-9 w-8 px-0 rounded-r-xl border-l border-border/10 hover:bg-secondary text-muted-foreground/40"
+                        >
+                          <ChevronDown className="h-3 w-3" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" className="rounded-xl p-2 border-primary/20 shadow-2xl backdrop-blur-3xl w-64 mt-2">
+                        <div className="px-3 py-2 text-[9px] font-black uppercase tracking-[0.2em] text-primary/60">Active Research Nodes</div>
+                        {workspaces.map(ws => (
+                          <DropdownMenuItem key={ws.id} onClick={() => setActiveWorkspace(ws.id)} className="rounded-lg gap-3 font-bold text-[11px] p-3 hover:bg-primary/10">
+                            <div className={cn("w-1.5 h-1.5 rounded-full transition-all", ws.id === activeWorkspaceId ? "bg-primary scale-125 shadow-[0_0_10px_rgba(13,148,136,0.5)]" : "bg-muted-foreground/20")} />
+                            {ws.name}
+                          </DropdownMenuItem>
+                        ))}
+                        <div className="border-t border-primary/10 my-1" />
+                        <DropdownMenuItem 
+                            className="rounded-lg gap-3 font-black text-[10px] uppercase tracking-widest p-3 text-primary hover:bg-primary hover:text-primary-foreground transition-all"
+                            onClick={() => setShowNewModal(true)}
+                        >
+                          <Plus className="h-3.5 w-3.5" /> NEW WORKSPACE
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
+            )}
+        </div>
         <NewWorkspaceModal isOpen={showNewModal} onClose={() => setShowNewModal(false)} />
       </div>
 

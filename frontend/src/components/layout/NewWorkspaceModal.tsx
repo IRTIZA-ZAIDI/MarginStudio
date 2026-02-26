@@ -28,9 +28,9 @@ export function NewWorkspaceModal({ isOpen, onClose }: NewWorkspaceModalProps) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-background/60 backdrop-blur-md animate-in fade-in duration-300">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-background/60 backdrop-blur-xl animate-in fade-in duration-300">
         <div 
-            className="w-full max-w-xl bg-card border border-primary/20 rounded-[40px] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] overflow-hidden animate-in zoom-in-95 duration-500"
+            className="w-full max-w-xl bg-card border border-primary/30 rounded-[40px] shadow-[0_50px_100px_-20px_rgba(0,0,0,0.5)] overflow-hidden animate-in zoom-in-95 scale-100 duration-500 relative"
             onClick={(e) => e.stopPropagation()}
         >
             <div className="p-10 text-center relative">
