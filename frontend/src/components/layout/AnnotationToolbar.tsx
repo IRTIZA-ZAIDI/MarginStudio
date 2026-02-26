@@ -43,8 +43,10 @@ export function AnnotationToolbar() {
     strokeColor, setStrokeColor,
     undo, redo, history, future,
     versionHistory, saveVersion, restoreVersion,
-    annotations, fileUrl
+    annotations, documents, activeDocumentId
   } = useAppState();
+
+  const activeDoc = documents.find(d => d.id === activeDocumentId);
 
   const [versionName, setVersionName] = useState("");
   const [isSaving, setIsSaving] = useState(false);
@@ -233,8 +235,8 @@ export function AnnotationToolbar() {
                 size="icon"
                 className="h-10 w-10 rounded-xl hover:bg-background/80"
                 onClick={() => {
-                  if (fileUrl) {
-                    exportAnnotatedPDF(fileUrl, annotations);
+                  if (activeDoc) {
+                    exportAnnotatedPDF(activeDoc.url, annotations);
                   }
                 }}
               >

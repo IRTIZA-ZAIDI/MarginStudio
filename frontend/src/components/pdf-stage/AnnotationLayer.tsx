@@ -18,9 +18,9 @@ interface AnnotationLayerProps {
 }
 
 export function AnnotationLayer({ pageNumber, width, height }: AnnotationLayerProps) {
-  const { annotations, toolMode } = useAppState();
+  const { annotations, toolMode, activeDocumentId } = useAppState();
 
-  const pageAnnotations = annotations.filter((a) => a.pageNumber === pageNumber);
+  const pageAnnotations = annotations.filter((a) => a.pageNumber === pageNumber && a.documentId === activeDocumentId);
   const isInteractive = toolMode === 'select' || toolMode === 'eraser';
 
   return (

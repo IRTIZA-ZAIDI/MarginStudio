@@ -21,6 +21,7 @@ export interface Annotation {
   id: string;
   type: ToolMode;
   pageNumber: number;
+  documentId: string; // New field
   coordinates: PDFCoordinates;
   content?: string;
   color?: string;
@@ -52,18 +53,44 @@ export interface Version {
 
 export type AIModel = 'claude-3-5-sonnet' | 'claude-3-opus' | 'gpt-4o' | 'gemini-1-5-pro';
 
+export interface Document {
+  id: string;
+  name: string;
+  url: string;
+}
+
+export interface Workspace {
+  id: string;
+  name: string;
+  documentIds: string[];
+}
+
 export interface GeneratedAsset {
   id: string;
   title: string;
-  type: 'flashcards' | 'summary' | 'pointers' | 'slidedeck' | 'podcast' | 'diagram';
+  type: 'flashcards' | 'summary' | 'pointers' | 'slidedeck' | 'podcast' | 'diagram' | 'mcqs' | 'questions' | 'chat-pdf';
   content: string;
   timestamp: number;
+  documentId?: string; // Which doc it was generated from
+}
+
+export interface MagicOptions {
+  tone: 'professional' | 'creative' | 'concise' | 'academic';
+  creativity: number; // 0-1
+  targetDocumentId?: string;
 }
 
 interface AppState {
-  // File State
-  fileUrl: string | null;
-  setFileUrl: (url: string | null) => void;
+  // Navigation & Workspace
+  workspaces: Workspace[];
+  activeWorkspaceId: string | null;
+  setActiveWorkspace: (id: string) => void;
+  
+  // Documents
+  documents: Document[];
+  activeDocumentId: string | null;
+  setActiveDocument: (id: string | null) => void;
+  addDocument: (doc: Document) => void;
 
   // Viewer State
   scale: number;
@@ -75,7 +102,7 @@ interface AppState {
   currentSelection: Selection | null;
   annotations: Annotation[];
   
-  // Generated Assets (NotebookLM Style)
+  // Generated Assets
   assets: GeneratedAsset[];
   addAsset: (asset: GeneratedAsset) => void;
   isGenerating: boolean;
@@ -93,11 +120,9 @@ interface AppState {
   saveVersion: (name: string) => void;
   restoreVersion: (id: string) => void;
 
-  // Model Selection
+  // Model & Style Selection
   selectedModel: AIModel;
   setSelectedModel: (model: AIModel) => void;
-
-  // Color selection
   strokeColor: string;
   setStrokeColor: (color: string) => void;
 
@@ -124,12 +149,15 @@ interface AppState {
   removeAnnotation: (id: string) => void;
   updateAnnotation: (id: string, updates: Partial<Annotation>, final?: boolean) => void;
   addMessage: (message: Message) => void;
-  sendMessage: (content: string, selection?: Selection | null, assetType?: GeneratedAsset['type']) => Promise<void>;
+  sendMessage: (content: string, selection?: Selection | null, assetType?: GeneratedAsset['type'], options?: MagicOptions) => Promise<void>;
 }
 
 export const useAppState = create<AppState>((set, get) => ({
   // Initial State
-  fileUrl: null,
+  workspaces: [{ id: 'ws_default', name: 'Default Research', documentIds: [] }],
+  activeWorkspaceId: 'ws_default',
+  documents: [],
+  activeDocumentId: null,
   scale: 1,
   currentPage: 1,
   toolMode: 'select',
@@ -149,15 +177,20 @@ export const useAppState = create<AppState>((set, get) => ({
   numPages: 0,
 
   // Actions
+  setActiveWorkspace: (activeWorkspaceId) => set({ activeWorkspaceId }),
+  setActiveDocument: (activeDocumentId) => set({ activeDocumentId }),
+  addDocument: (doc) => set((state) => ({ 
+    documents: [...state.documents, doc],
+    activeDocumentId: state.activeDocumentId || doc.id
+  })),
   setNumPages: (numPages) => set({ numPages }),
-  setFileUrl: (fileUrl) => set({ fileUrl }),
   setStrokeColor: (strokeColor) => set({ strokeColor }),
   setScale: (scale) => set({ scale }),
   setIsGenerating: (isGenerating) => set({ isGenerating }),
   setActiveTab: (activeTab) => set({ activeTab }),
   addAsset: (asset) => set((state) => ({ 
     assets: [asset, ...state.assets],
-    activeTab: 'assets' // Switch to assets view
+    activeTab: 'assets'
   })),
   zoomIn: () => set((state) => ({ scale: Math.min(state.scale + 0.1, 3) })),
   zoomOut: () => set((state) => ({ scale: Math.max(state.scale - 0.1, 0.5) })),
@@ -167,7 +200,6 @@ export const useAppState = create<AppState>((set, get) => ({
   setSidebarOpen: (isSidebarOpen) => set({ isSidebarOpen }),
   setCurrentSelection: (currentSelection) => set((state) => ({ 
       currentSelection, 
-      // Auto-open sidebar if selecting something new
       isSidebarOpen: currentSelection ? true : state.isSidebarOpen 
   })),
   setSelectedModel: (selectedModel) => set({ selectedModel }),
@@ -184,13 +216,10 @@ export const useAppState = create<AppState>((set, get) => ({
   undo: () => {
     const { history, annotations, future } = get();
     if (history.length === 0) return;
-    
     const previous = history[history.length - 1];
-    const newHistory = history.slice(0, -1);
-    
     set({
       annotations: previous,
-      history: newHistory,
+      history: history.slice(0, -1),
       future: [JSON.parse(JSON.stringify(annotations)), ...future]
     });
   },
@@ -198,14 +227,11 @@ export const useAppState = create<AppState>((set, get) => ({
   redo: () => {
     const { future, annotations, history } = get();
     if (future.length === 0) return;
-    
     const next = future[0];
-    const newFuture = future.slice(1);
-    
     set({
       annotations: next,
       history: [...history, JSON.parse(JSON.stringify(annotations))],
-      future: newFuture
+      future: future.slice(1)
     });
   },
 
@@ -248,14 +274,18 @@ export const useAppState = create<AppState>((set, get) => ({
 
   addMessage: (message: Message) => set((state) => ({ chatHistory: [...state.chatHistory, message] })),
   
-  sendMessage: async (content, selection, assetType) => {
+  sendMessage: async (content, selection, assetType, options) => {
     const { v4: uuidv4 } = await import('uuid');
-    const { selectedModel } = get();
+    const { selectedModel, activeDocumentId, documents } = get();
     
+    // Determine which document to generate from (options override, then active, then first available)
+    const targetDocId = options?.targetDocumentId || activeDocumentId || documents[0]?.id;
+    const targetDoc = documents.find(d => d.id === targetDocId);
+
     const userMessage: Message = {
       id: uuidv4(),
       role: 'user',
-      content,
+      content: assetType ? `[SYSTEM: Generating ${assetType} from ${targetDoc?.name || 'document'} with ${options?.tone || 'default'} tone]` : content,
       timestamp: Date.now(),
       relatedSelection: selection || undefined
     };
@@ -267,14 +297,14 @@ export const useAppState = create<AppState>((set, get) => ({
         isSidebarOpen: true
     }));
 
-    // Simulation delay
     setTimeout(async () => {
         if (assetType) {
             const newAsset: GeneratedAsset = {
                 id: uuidv4(),
-                title: `${assetType.toUpperCase()} - ${new Date().toLocaleTimeString()}`,
+                title: `${assetType.toUpperCase()} - ${targetDoc?.name || 'Selection'}`,
                 type: assetType,
-                content: `Generated ${assetType} content for: ${selection?.content || 'Selection'}\n\n1. Key insight here\n2. Supporting evidence\n3. Final conclusion.`,
+                documentId: targetDocId || undefined,
+                content: `### ${assetType.toUpperCase()} for ${targetDoc?.name || 'Selection'}\n\n**Tone:** ${options?.tone || 'Standard'}\n**Creativity:** ${options?.creativity || 0.5}\n\n1. Automatically analyzed patterns in the full document content...\n2. Extracted key entity relationships and thematic clusters.\n3. Synthesized findings in ${options?.tone || 'standard'} format.\n\nEnjoy your research!`,
                 timestamp: Date.now()
             };
             set(state => ({ 
@@ -286,7 +316,7 @@ export const useAppState = create<AppState>((set, get) => ({
             const aiMessage: Message = {
                 id: uuidv4(),
                 role: 'assistant',
-                content: `[Model: ${selectedModel}]\n\nI've analyzed the ${selection?.type === 'area' ? 'selected area' : 'selected text'}. \n\nHow else can I help with this section?`,
+                content: `[Model: ${selectedModel}]\n\nI've analyzed the ${selection?.type === 'area' ? 'selected area' : (selection ? 'selected text' : 'document')}. \n\nHow else can I help with this?`,
                 timestamp: Date.now()
             };
             set((state) => ({ 
@@ -294,6 +324,6 @@ export const useAppState = create<AppState>((set, get) => ({
                 isLoading: false
             }));
         }
-    }, 2000);
+    }, 2500);
   }
 }));

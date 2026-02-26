@@ -8,23 +8,28 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 
 export function LandingPage() {
-  const { setFileUrl } = useAppState();
+  const { addDocument } = useAppState();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
 
-  const handleFile = (file: File) => {
-    if (file && file.type === "application/pdf") {
-      const url = URL.createObjectURL(file);
-      setFileUrl(url);
-    } else {
-      alert("Please upload a PDF document.");
-    }
+  const handleFiles = (files: FileList | null) => {
+    if (!files) return;
+    
+    Array.from(files).forEach(file => {
+        if (file && file.type === "application/pdf") {
+            const url = URL.createObjectURL(file);
+            const id = Math.random().toString(36).substr(2, 9);
+            addDocument({
+                id,
+                name: file.name,
+                url
+            });
+        }
+    });
   };
 
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      handleFile(e.target.files[0]);
-    }
+    handleFiles(e.target.files);
   };
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -40,9 +45,7 @@ export function LandingPage() {
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
     setIsDragging(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFile(e.dataTransfer.files[0]);
-    }
+    handleFiles(e.dataTransfer.files);
   };
 
   return (
@@ -105,6 +108,7 @@ export function LandingPage() {
             type="file" 
             className="hidden" 
             accept="application/pdf"
+            multiple
             ref={fileInputRef}
             onChange={onFileChange}
           />

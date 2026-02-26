@@ -25,7 +25,8 @@ export function InteractionLayer({ pageNumber, width, height }: InteractionLayer
     strokeColor, 
     sendMessage,
     setSidebarOpen,
-    setToolMode
+    setToolMode,
+    activeDocumentId
   } = useAppState();
   const { theme } = useTheme();
   
@@ -126,7 +127,6 @@ export function InteractionLayer({ pageNumber, width, height }: InteractionLayer
                   const text = selection.toString();
                   const pageRect = layerRef.current.getBoundingClientRect();
                   
-                  // Get ALL rects for precise highlighting (text-only)
                   const clientRects = Array.from(range.getClientRects());
                   const normalizedRects = clientRects.map(r => ({
                       x1: (r.left - pageRect.left) / width,
@@ -148,6 +148,7 @@ export function InteractionLayer({ pageNumber, width, height }: InteractionLayer
                           id: uuidv4(),
                           type: 'highlight',
                           pageNumber,
+                          documentId: activeDocumentId!,
                           coordinates: normalized,
                           rects: normalizedRects,
                           color: strokeColor,
@@ -169,7 +170,7 @@ export function InteractionLayer({ pageNumber, width, height }: InteractionLayer
 
     document.addEventListener('mouseup', handleMouseUpText);
     return () => document.removeEventListener('mouseup', handleMouseUpText);
-  }, [toolMode, pageNumber, width, height, addAnnotation, setCurrentSelection, strokeColor]);
+  }, [toolMode, pageNumber, width, height, addAnnotation, setCurrentSelection, strokeColor, activeDocumentId]);
 
 
   // Pen State
@@ -209,6 +210,7 @@ export function InteractionLayer({ pageNumber, width, height }: InteractionLayer
             id: uuidv4(),
             type: toolMode === 'sticky' ? 'sticky' : 'text',
             pageNumber,
+            documentId: activeDocumentId!,
             coordinates: normalized,
             content: "", // Empty content triggers auto-edit in AnnotationItem
             color: toolMode === 'sticky' ? '#fef08a' : (strokeColor === '#fde047' ? undefined : strokeColor),
@@ -277,6 +279,7 @@ export function InteractionLayer({ pageNumber, width, height }: InteractionLayer
                 id: uuidv4(),
                 type: 'pen',
                 pageNumber,
+                documentId: activeDocumentId!,
                 coordinates: { x1: Math.min(...xs)/width, y1: Math.min(...ys)/height, x2: Math.max(...xs)/width, y2: Math.max(...ys)/height },
                 path: normalizedPath,
                 color: strokeColor,

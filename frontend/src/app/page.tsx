@@ -20,9 +20,11 @@ const PDFRenderer = dynamic(() => import("@/components/pdf-stage/PDFRenderer").t
 });
 
 export default function Home() {
-  const { fileUrl, assets, isSidebarOpen, toggleSidebar, activeTab, setActiveTab } = useAppState();
+  const { documents, activeDocumentId, assets, isSidebarOpen, toggleSidebar, activeTab, setActiveTab } = useAppState();
 
-  if (!fileUrl) {
+  const activeDoc = documents.find(d => d.id === activeDocumentId);
+
+  if (documents.length === 0) {
     return <LandingPage />;
   }
 
@@ -31,34 +33,45 @@ export default function Home() {
       <Header />
       <AnnotationToolbar />
       <div className="flex-1 overflow-hidden relative">
-        {/* Magic Toolbar will float over the active view */}
-
         <SplitView
           left={
             <div className="h-full overflow-hidden bg-zinc-50 dark:bg-zinc-950 border-r relative flex flex-col transition-all">
                
                {/* Top Tabs for View Switching */}
-               <div className="flex bg-secondary p-1 rounded-full w-max mx-auto mt-6 mb-4 shadow-sm border border-border shrink-0 z-40 relative">
+               <div className="flex bg-secondary/30 backdrop-blur-sm p-1 rounded-2xl w-max mx-auto mt-4 mb-4 shadow-sm border border-border/50 shrink-0 z-40 relative">
                  <button 
                    onClick={() => setActiveTab('reader')} 
-                   className={cn("px-5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all", activeTab === 'reader' ? 'bg-primary text-primary-foreground shadow' : 'text-muted-foreground hover:bg-background')}
+                   className={cn(
+                     "px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2", 
+                     activeTab === 'reader' ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' : 'text-muted-foreground/60 hover:text-foreground hover:bg-secondary/50'
+                   )}
                  >
+                   <BookOpen className="h-3.5 w-3.5" />
                    PDF Document
                  </button>
                  <button 
                    onClick={() => setActiveTab('assets')} 
-                   className={cn("px-5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex gap-2 items-center transition-all", activeTab === 'assets' ? 'bg-primary text-primary-foreground shadow' : 'text-muted-foreground hover:bg-background')}
+                   className={cn(
+                     "px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] flex gap-2 items-center transition-all", 
+                     activeTab === 'assets' ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' : 'text-muted-foreground/60 hover:text-foreground hover:bg-secondary/50'
+                   )}
                  >
+                   <Sparkles className="h-3.5 w-3.5" />
                    Magic Assets 
-                   {assets.length > 0 && <span className="bg-primary/20 text-primary px-1.5 rounded-sm h-4 flex items-center justify-center text-[10px]">{assets.length}</span>}
+                   {assets.length > 0 && <span className={cn("px-1.5 rounded-sm h-4 flex items-center justify-center text-[9px]", activeTab === 'assets' ? 'bg-white/20 text-white' : 'bg-primary/20 text-primary')}>{assets.length}</span>}
                  </button>
                </div>
 
                <div className="flex-1 overflow-auto relative custom-scrollbar bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] dark:bg-[radial-gradient(#1f2937_1px,transparent_1px)] [background-size:32px_32px]">
-                   <MagicToolbar />
                    {activeTab === 'reader' ? (
                        <div className="min-h-screen pb-32">
-                          <PDFRenderer url={fileUrl} />
+                          {activeDoc ? (
+                            <PDFRenderer url={activeDoc.url} />
+                          ) : (
+                            <div className="flex items-center justify-center h-full text-muted-foreground uppercase text-[10px] font-black tracking-widest">
+                               Select a document to view
+                            </div>
+                          )}
                        </div>
                    ) : (
                        <AssetDisplay />
@@ -66,6 +79,8 @@ export default function Home() {
                </div>
             </div>
           }
+
+
           right={
             <div className="h-full bg-background border-l shadow-[-10px_0_30px_rgba(0,0,0,0.02)]">
               <AISidebar />
