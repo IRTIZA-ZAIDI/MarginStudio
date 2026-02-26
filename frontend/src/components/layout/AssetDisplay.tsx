@@ -12,7 +12,6 @@ import { useState } from "react";
 import { MarkdownRenderer } from "@/components/ai-sidebar/MarkdownRenderer";
 
 const MAGIC_TOOLS: { id: GeneratedAsset['type']; icon: React.ReactNode; label: string; prompt: string; color: string }[] = [
-    { id: "chat-pdf", icon: <MessageSquare className="h-4 w-4" />, label: "Chat with PDF", prompt: "Let's discuss this document.", color: "bg-blue-500/10 text-blue-500" },
     { id: "flashcards", icon: <BrainCircuit className="h-4 w-4" />, label: "Make Flashcards", prompt: "Convert this into active recall flashcards.", color: "bg-purple-500/10 text-purple-500" },
     { id: "summary", icon: <FileText className="h-4 w-4" />, label: "Full Summary", prompt: "Provide a comprehensive summary of this content.", color: "bg-teal-500/10 text-teal-500" },
     { id: "pointers", icon: <ListTodo className="h-4 w-4" />, label: "Key Pointers", prompt: "Extract the most important bullet points.", color: "bg-amber-500/10 text-amber-500" },
@@ -48,9 +47,6 @@ export function AssetDisplay() {
         targetDocumentId: options.targetDocId
     });
     
-    if (pendingTool.id === 'chat-pdf') {
-        setSidebarOpen(true);
-    }
     setPendingTool(null);
   };
 
@@ -119,6 +115,7 @@ export function AssetDisplay() {
                                     onChange={(e) => setOptions(prev => ({ ...prev, targetDocId: e.target.value }))}
                                     className="w-full bg-secondary/50 border-none rounded-xl px-4 py-3 text-xs font-bold outline-none ring-1 ring-border/50 focus:ring-primary/40 transition-all appearance-none"
                                 >
+                                    <option value="all_workspace">Entire Workspace ({documents.length} Docs)</option>
                                     {documents.map(doc => (
                                         <option key={doc.id} value={doc.id}>{doc.name}</option>
                                     ))}

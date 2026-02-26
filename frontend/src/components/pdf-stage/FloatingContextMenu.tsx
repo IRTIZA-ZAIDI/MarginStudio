@@ -1,7 +1,7 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { Sparkles, FileText, List, MoreHorizontal } from "lucide-react";
+import { Sparkles, FileText, List, MoreHorizontal, Layout } from "lucide-react";
 import { useAppState } from "@/store/useAppState";
 
 interface FloatingContextMenuProps {
@@ -35,6 +35,15 @@ export function FloatingContextMenu({ position, onAction }: FloatingContextMenuP
       >
         <List className="h-4 w-4 text-primary" />
         Summarize
+      </Button>
+      <Button
+        variant="ghost"
+        size="sm"
+        className="justify-start gap-3 h-9 rounded-lg font-bold text-[10px] uppercase tracking-widest text-muted-foreground hover:text-foreground hover:bg-secondary"
+        onClick={() => onAction("send_to_canvas")}
+      >
+        <Layout className="h-4 w-4 text-primary" />
+        Send to Canvas
       </Button>
       <div className="my-1 h-[1px] bg-border mx-1" />
       <Button

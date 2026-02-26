@@ -63,6 +63,7 @@ export interface Workspace {
   id: string;
   name: string;
   documentIds: string[];
+  notes?: string;
 }
 
 export interface GeneratedAsset {
@@ -72,6 +73,19 @@ export interface GeneratedAsset {
   content: string;
   timestamp: number;
   documentId?: string; // Which doc it was generated from
+}
+
+export interface WhiteboardElement {
+  id: string;
+  type: 'image' | 'text' | 'note' | 'shape';
+  x: number;
+  y: number;
+  width?: number;
+  height?: number;
+  content?: string;
+  imageUrl?: string;
+  color?: string;
+  rotation?: number;
 }
 
 export interface MagicOptions {
@@ -84,7 +98,13 @@ interface AppState {
   // Navigation & Workspace
   workspaces: Workspace[];
   activeWorkspaceId: string | null;
-  setActiveWorkspace: (id: string) => void;
+  setActiveWorkspace: (id: string | null) => void;
+  updateWorkspaceName: (id: string, name: string) => void;
+  updateWorkspaceNotes: (id: string, notes: string) => void;
+  addWorkspace: (ws: Workspace) => void;
+  
+  isSignedIn: boolean;
+  setSignedIn: (val: boolean) => void;
   
   // Documents
   documents: Document[];
@@ -97,6 +117,8 @@ interface AppState {
   currentPage: number;
   toolMode: ToolMode;
   isSidebarOpen: boolean;
+  isLibraryOpen: boolean;
+  toggleLibrary: () => void;
 
   // Selection & Annotations
   currentSelection: Selection | null;
@@ -107,6 +129,12 @@ interface AppState {
   addAsset: (asset: GeneratedAsset) => void;
   isGenerating: boolean;
   setIsGenerating: (is: boolean) => void;
+  
+  // Whiteboard
+  whiteboardElements: WhiteboardElement[];
+  addWhiteboardElement: (el: WhiteboardElement) => void;
+  updateWhiteboardElement: (id: string, updates: Partial<WhiteboardElement>) => void;
+  removeWhiteboardElement: (id: string) => void;
 
   // History (Undo/Redo)
   history: Annotation[][];
@@ -154,14 +182,22 @@ interface AppState {
 
 export const useAppState = create<AppState>((set, get) => ({
   // Initial State
-  workspaces: [{ id: 'ws_default', name: 'Default Research', documentIds: [] }],
-  activeWorkspaceId: 'ws_default',
+  workspaces: [
+    { id: 'ws_default', name: 'Default Research', documentIds: [], notes: "" },
+    { id: 'ws_medical', name: 'Medical Analysis', documentIds: [], notes: "" },
+    { id: 'ws_legal', name: 'Legal Case Review', documentIds: [], notes: "" },
+  ],
+  activeWorkspaceId: null, // Start at null for Dashboard
+  isSignedIn: false,
+  whiteboardElements: [],
   documents: [],
   activeDocumentId: null,
   scale: 1,
   currentPage: 1,
   toolMode: 'select',
   isSidebarOpen: true,
+  isLibraryOpen: true,
+  toggleLibrary: () => set((state) => ({ isLibraryOpen: !state.isLibraryOpen })),
   currentSelection: null,
   annotations: [],
   assets: [],
@@ -178,6 +214,14 @@ export const useAppState = create<AppState>((set, get) => ({
 
   // Actions
   setActiveWorkspace: (activeWorkspaceId) => set({ activeWorkspaceId }),
+  setSignedIn: (isSignedIn) => set({ isSignedIn }),
+  updateWorkspaceName: (id, name) => set((state) => ({
+    workspaces: state.workspaces.map(ws => ws.id === id ? { ...ws, name } : ws)
+  })),
+  updateWorkspaceNotes: (id, notes) => set((state) => ({
+    workspaces: state.workspaces.map(ws => ws.id === id ? { ...ws, notes } : ws)
+  })),
+  addWorkspace: (ws) => set((state) => ({ workspaces: [...state.workspaces, ws] })),
   setActiveDocument: (activeDocumentId) => set({ activeDocumentId }),
   addDocument: (doc) => set((state) => ({ 
     documents: [...state.documents, doc],
@@ -203,6 +247,17 @@ export const useAppState = create<AppState>((set, get) => ({
       isSidebarOpen: currentSelection ? true : state.isSidebarOpen 
   })),
   setSelectedModel: (selectedModel) => set({ selectedModel }),
+  
+  // Whiteboard Actions
+  addWhiteboardElement: (el) => set((state) => ({ 
+    whiteboardElements: [...state.whiteboardElements, el] 
+  })),
+  updateWhiteboardElement: (id, updates) => set((state) => ({
+    whiteboardElements: state.whiteboardElements.map(el => el.id === id ? { ...el, ...updates } : el)
+  })),
+  removeWhiteboardElement: (id) => set((state) => ({
+    whiteboardElements: state.whiteboardElements.filter(el => el.id !== id)
+  })),
 
   saveToHistory: (stateOverride) => {
     const { annotations, history } = get();
@@ -279,32 +334,35 @@ export const useAppState = create<AppState>((set, get) => ({
     const { selectedModel, activeDocumentId, documents } = get();
     
     // Determine which document to generate from (options override, then active, then first available)
-    const targetDocId = options?.targetDocumentId || activeDocumentId || documents[0]?.id;
-    const targetDoc = documents.find(d => d.id === targetDocId);
+    // Determine which document to generate from (options override, then active, then first available)
+    const isWorkspaceWide = options?.targetDocumentId === 'all_workspace';
+    const targetDocId = isWorkspaceWide ? null : (options?.targetDocumentId || activeDocumentId || documents[0]?.id);
+    const targetDoc = isWorkspaceWide ? null : documents.find(d => d.id === targetDocId);
+    const sourceLabel = isWorkspaceWide ? 'Entire Workspace' : (targetDoc?.name || 'Selection');
 
     const userMessage: Message = {
       id: uuidv4(),
       role: 'user',
-      content: assetType ? `[SYSTEM: Generating ${assetType} from ${targetDoc?.name || 'document'} with ${options?.tone || 'default'} tone]` : content,
+      content: assetType ? `[SYSTEM: Generating ${assetType} from ${sourceLabel} with ${options?.tone || 'default'} tone]` : content,
       timestamp: Date.now(),
       relatedSelection: selection || undefined
     };
 
     set((state) => ({ 
-        chatHistory: [...state.chatHistory, userMessage],
+        chatHistory: assetType ? state.chatHistory : [...state.chatHistory, userMessage],
         isLoading: !assetType,
         isGenerating: !!assetType,
-        isSidebarOpen: true
+        isSidebarOpen: assetType ? state.isSidebarOpen : true
     }));
 
     setTimeout(async () => {
         if (assetType) {
             const newAsset: GeneratedAsset = {
                 id: uuidv4(),
-                title: `${assetType.toUpperCase()} - ${targetDoc?.name || 'Selection'}`,
+                title: `${assetType.toUpperCase()} - ${sourceLabel}`,
                 type: assetType,
                 documentId: targetDocId || undefined,
-                content: `### ${assetType.toUpperCase()} for ${targetDoc?.name || 'Selection'}\n\n**Tone:** ${options?.tone || 'Standard'}\n**Creativity:** ${options?.creativity || 0.5}\n\n1. Automatically analyzed patterns in the full document content...\n2. Extracted key entity relationships and thematic clusters.\n3. Synthesized findings in ${options?.tone || 'standard'} format.\n\nEnjoy your research!`,
+                content: `### ${assetType.toUpperCase()} for ${sourceLabel}\n\n**Tone:** ${options?.tone || 'Standard'}\n**Creativity:** ${options?.creativity || 0.5}\n\n1. Automatically analyzed patterns in ${isWorkspaceWide ? 'all documents in this workspace' : 'the content'}...\n2. Extracted key entity relationships and thematic clusters.\n3. Synthesized findings in ${options?.tone || 'standard'} format.\n\nEnjoy your research!`,
                 timestamp: Date.now()
             };
             set(state => ({ 

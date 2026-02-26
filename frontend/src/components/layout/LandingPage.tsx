@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 
 export function LandingPage() {
-  const { addDocument } = useAppState();
+  const { addDocument, setSignedIn } = useAppState();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -24,6 +24,7 @@ export function LandingPage() {
                 name: file.name,
                 url
             });
+            setSignedIn(true);
         }
     });
   };
@@ -59,9 +60,13 @@ export function LandingPage() {
         <div className="flex items-center gap-6 text-sm font-medium text-muted-foreground">
             <a href="#" className="hover:text-foreground transition-colors">Research</a>
             <a href="#" className="hover:text-foreground transition-colors">Privacy</a>
-            <Link href="/login">
-                <Button variant="outline" className="rounded-full border-border hover:bg-secondary">Sign In</Button>
-            </Link>
+            <Button 
+                variant="outline" 
+                className="rounded-full border-border hover:bg-secondary"
+                onClick={() => setSignedIn(true)}
+            >
+                Sign In
+            </Button>
         </div>
       </nav>
 

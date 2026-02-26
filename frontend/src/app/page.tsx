@@ -7,11 +7,15 @@ import { MagicToolbar } from "@/components/layout/MagicToolbar";
 import { SplitView } from "@/components/layout/SplitView";
 import { AISidebar } from "@/components/ai-sidebar/AISidebar";
 import { LandingPage } from "@/components/layout/LandingPage";
+import { Dashboard } from "@/components/layout/Dashboard";
 import { AssetDisplay } from "@/components/layout/AssetDisplay";
+import { LibrarySidebar } from "@/components/layout/LibrarySidebar";
+import { Whiteboard } from "@/components/layout/Whiteboard";
+import { NotesEditor } from "@/components/layout/NotesEditor";
 import { useAppState } from "@/store/useAppState";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { BookOpen, Sparkles, MessageSquare } from "lucide-react";
+import { BookOpen, Sparkles, MessageSquare, Library, Layout, FileText, PenTool } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const PDFRenderer = dynamic(() => import("@/components/pdf-stage/PDFRenderer").then(mod => mod.PDFRenderer), {
@@ -20,62 +24,77 @@ const PDFRenderer = dynamic(() => import("@/components/pdf-stage/PDFRenderer").t
 });
 
 export default function Home() {
-  const { documents, activeDocumentId, assets, isSidebarOpen, toggleSidebar, activeTab, setActiveTab } = useAppState();
+  const { 
+    documents, activeDocumentId, assets, isSidebarOpen, 
+    toggleSidebar, activeTab, setActiveTab,
+    isSignedIn, activeWorkspaceId
+  } = useAppState();
 
   const activeDoc = documents.find(d => d.id === activeDocumentId);
 
-  if (documents.length === 0) {
+  if (!isSignedIn) {
     return <LandingPage />;
+  }
+
+  if (!activeWorkspaceId) {
+    return <Dashboard />;
   }
 
   return (
     <div className="flex bg-background font-sans h-screen flex-col overflow-hidden text-foreground">
       <Header />
       <AnnotationToolbar />
-      <div className="flex-1 overflow-hidden relative">
+      <div className="flex-1 overflow-hidden relative flex">
+        <LibrarySidebar />
+        <div className="flex-1 h-full overflow-hidden relative">
         <SplitView
           left={
             <div className="h-full overflow-hidden bg-zinc-50 dark:bg-zinc-950 border-r relative flex flex-col transition-all">
                
                {/* Top Tabs for View Switching */}
-               <div className="flex bg-secondary/30 backdrop-blur-sm p-1 rounded-2xl w-max mx-auto mt-4 mb-4 shadow-sm border border-border/50 shrink-0 z-40 relative">
-                 <button 
-                   onClick={() => setActiveTab('reader')} 
-                   className={cn(
-                     "px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2", 
-                     activeTab === 'reader' ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' : 'text-muted-foreground/60 hover:text-foreground hover:bg-secondary/50'
-                   )}
-                 >
-                   <BookOpen className="h-3.5 w-3.5" />
-                   PDF Document
-                 </button>
-                 <button 
-                   onClick={() => setActiveTab('assets')} 
-                   className={cn(
-                     "px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-[0.2em] flex gap-2 items-center transition-all", 
-                     activeTab === 'assets' ? 'bg-primary text-primary-foreground shadow-lg shadow-primary/20' : 'text-muted-foreground/60 hover:text-foreground hover:bg-secondary/50'
-                   )}
-                 >
-                   <Sparkles className="h-3.5 w-3.5" />
-                   Magic Assets 
-                   {assets.length > 0 && <span className={cn("px-1.5 rounded-sm h-4 flex items-center justify-center text-[9px]", activeTab === 'assets' ? 'bg-white/20 text-white' : 'bg-primary/20 text-primary')}>{assets.length}</span>}
-                 </button>
+               <div className="flex bg-secondary/30 backdrop-blur-sm p-1.5 rounded-[28px] w-max mx-auto mt-6 mb-4 shadow-sm border border-border/50 shrink-0 z-40 relative group">
+                 {[
+                   { id: 'reader', icon: <BookOpen className="h-3.5 w-3.5" />, label: 'Document' },
+                   { id: 'assets', icon: <Sparkles className="h-3.5 w-3.5" />, label: 'Magic Assets' },
+                   { id: 'whiteboard', icon: <Layout className="h-3.5 w-3.5" />, label: 'Studio Canvas' },
+                   { id: 'notes', icon: <PenTool className="h-3.5 w-3.5" />, label: 'Research Notes' },
+                 ].map((tab) => (
+                   <button 
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id as any)} 
+                    className={cn(
+                      "px-5 py-2.5 rounded-[22px] text-[10px] font-black uppercase tracking-[0.2em] transition-all flex items-center gap-2 group/btn relative overflow-hidden", 
+                      activeTab === tab.id 
+                        ? 'bg-primary text-primary-foreground shadow-2xl shadow-primary/30' 
+                        : 'text-muted-foreground/40 hover:text-foreground hover:bg-secondary/80'
+                    )}
+                   >
+                     {tab.icon}
+                     {tab.label}
+                     {tab.id === 'assets' && assets.length > 0 && (
+                        <span className={cn("px-1.5 rounded-sm h-4 flex items-center justify-center text-[9px]", activeTab === 'assets' ? 'bg-white/20 text-white' : 'bg-primary/20 text-primary')}>
+                            {assets.length}
+                        </span>
+                     )}
+                   </button>
+                 ))}
                </div>
 
-               <div className="flex-1 overflow-auto relative custom-scrollbar bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] dark:bg-[radial-gradient(#1f2937_1px,transparent_1px)] [background-size:32px_32px]">
-                   {activeTab === 'reader' ? (
+               <div className="flex-1 overflow-auto relative custom-scrollbar bg-[radial-gradient(#e5e7eb_px,transparent_1px)] dark:bg-[radial-gradient(#1f2937_1px,transparent_1px)] [background-size:32px_32px]">
+                   {activeTab === 'reader' && (
                        <div className="min-h-screen pb-32">
                           {activeDoc ? (
                             <PDFRenderer url={activeDoc.url} />
                           ) : (
                             <div className="flex items-center justify-center h-full text-muted-foreground uppercase text-[10px] font-black tracking-widest">
-                               Select a document to view
+                               Select a document to begin analysis
                             </div>
                           )}
                        </div>
-                   ) : (
-                       <AssetDisplay />
                    )}
+                   {activeTab === 'assets' && <AssetDisplay />}
+                   {activeTab === 'whiteboard' && <Whiteboard />}
+                   {activeTab === 'notes' && <NotesEditor />}
                </div>
             </div>
           }
@@ -100,6 +119,7 @@ export default function Home() {
             </Button>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

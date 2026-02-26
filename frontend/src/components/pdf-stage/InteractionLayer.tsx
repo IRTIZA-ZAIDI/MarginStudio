@@ -26,7 +26,9 @@ export function InteractionLayer({ pageNumber, width, height }: InteractionLayer
     sendMessage,
     setSidebarOpen,
     setToolMode,
-    activeDocumentId
+    activeDocumentId,
+    addWhiteboardElement,
+    setActiveTab
   } = useAppState();
   const { theme } = useTheme();
   
@@ -71,6 +73,20 @@ export function InteractionLayer({ pageNumber, width, height }: InteractionLayer
     if (action === 'ask_ai') {
         setSidebarOpen(true);
         // We keep currentSelection so it stays attached to the ChatInput
+        return;
+    }
+
+    if (action === 'send_to_canvas') {
+        addWhiteboardElement({
+            id: uuidv4(),
+            type: currentSelection.type === 'area' ? 'image' : 'text',
+            x: 100 + Math.random() * 200,
+            y: 100 + Math.random() * 200,
+            content: currentSelection.content,
+            imageUrl: currentSelection.imageUrl,
+        });
+        setActiveTab('whiteboard');
+        setCurrentSelection(null);
         return;
     }
 
