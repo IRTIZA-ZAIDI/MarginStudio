@@ -29,7 +29,10 @@ import {
   Italic,
   List as ListIcon,
   Quote,
-  Sparkles
+  Sparkles,
+  ArrowUpRight,
+  Minus,
+  Diamond
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -75,7 +78,10 @@ export function AnnotationToolbar() {
     { id: 'text', icon: <Type className="h-4 w-4" />, label: "Add Text Content" },
     { id: 'note', icon: <StickyNote className="h-4 w-4" />, label: "Add Sticky Note" },
     { id: 'shape_square', icon: <Square className="h-4 w-4" />, label: "Add Square" },
+    { id: 'shape_diamond', icon: <Diamond className="h-4 w-4" />, label: "Add Diamond" },
     { id: 'shape_circle', icon: <Circle className="h-4 w-4" />, label: "Add Circle" },
+    { id: 'arrow', icon: <ArrowUpRight className="h-4 w-4" />, label: "Add Arrow" },
+    { id: 'line', icon: <Minus className="h-4 w-4" />, label: "Add Line" },
     { id: 'image', icon: <ImageIcon className="h-4 w-4" />, label: "Upload Image to Canvas" },
     { id: 'eraser', icon: <Eraser className="h-4 w-4" />, label: "Remove Element" },
   ];
@@ -116,6 +122,9 @@ export function AnnotationToolbar() {
     if (id === 'text') addWhiteboardElement({ id: uuidv4(), type: 'text', x, y, content: 'Double click to edit text' });
     if (id === 'note') addWhiteboardElement({ id: uuidv4(), type: 'note', x, y, content: 'New Workspace Note', color: '#fef08a' });
     if (id === 'shape_square') addWhiteboardElement({ id: uuidv4(), type: 'shape', x, y, width: 100, height: 100, color: '#e5e7eb' });
+    if (id === 'shape_diamond') addWhiteboardElement({ id: uuidv4(), type: 'diamond', x, y, width: 80, height: 80, color: '#e5e7eb' });
+    if (id === 'arrow') addWhiteboardElement({ id: uuidv4(), type: 'arrow', x, y, width: 150, height: 100, color: '#e5e7eb' });
+    if (id === 'line') addWhiteboardElement({ id: uuidv4(), type: 'line', x, y, width: 150, height: 100, color: '#e5e7eb' });
   };
 
   const handleNotesAction = (id: string) => {
@@ -175,7 +184,7 @@ export function AnnotationToolbar() {
 
         {activeTab === 'notes' && notesTools.map((tool) => (
           <Tooltip key={tool.id}>
-            <TooltipTrigger asChild side="top">
+            <TooltipTrigger asChild>
               <Button
                 variant="ghost"
                 size="icon"

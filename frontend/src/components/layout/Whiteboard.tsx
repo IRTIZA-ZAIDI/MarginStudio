@@ -50,7 +50,7 @@ export function Whiteboard() {
         onDoubleClick={() => setSelectedId(null)}
     >
       {/* Grid Background Overlay */}
-      <div className="absolute inset-0 opacity-[0.4] pointer-events-none bg-[radial-gradient(#e5e7eb_1.5px,transparent_1.5px)] [background-size:32px_32px]" />
+      <div className="absolute inset-0 opacity-[0.6] pointer-events-none bg-[radial-gradient(#e5e7eb_2px,transparent_2px)] [background-size:40px_40px]" />
 
 
       {/* Canvas Elements */}
@@ -97,6 +97,38 @@ export function Whiteboard() {
                 {el.content}
               </div>
             )}
+
+            {el.type === 'shape' && (
+                <div 
+                    className="w-full h-full border-2 border-primary/40 bg-primary/5 rounded-lg"
+                    style={{ width: el.width, height: el.height }}
+                />
+            )}
+
+            {el.type === 'diamond' && (
+                <div 
+                    className="w-full h-full border-2 border-primary/40 bg-primary/5 rotate-45"
+                    style={{ width: el.width, height: el.height }}
+                />
+            )}
+
+            {(el.type === 'arrow' || el.type === 'line') && (
+                <svg width={el.width || 200} height={el.height || 200} className="overflow-visible">
+                    <defs>
+                        <marker id={`arrowhead-${el.id}`} markerWidth="10" markerHeight="7" refX="0" refY="3.5" orient="auto">
+                            <polygon points="0 0, 10 3.5, 0 7" fill="currentColor" className="text-primary/60" />
+                        </marker>
+                    </defs>
+                    <line 
+                        x1="0" y1="0" 
+                        x2={el.width || 100} y2={el.height || 100} 
+                        stroke="currentColor" 
+                        strokeWidth="2" 
+                        className="text-primary/60"
+                        markerEnd={el.type === 'arrow' ? `url(#arrowhead-${el.id})` : undefined}
+                    />
+                </svg>
+            )}
             
             {/* Selection Controls */}
             {selectedId === el.id && (
@@ -108,12 +140,6 @@ export function Whiteboard() {
         ))}
       </div>
 
-      {/* Empty State */}
-      {whiteboardElements.length === 0 && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none opacity-20 capitalize tracking-widest font-black text-sm">
-            Interactive Studio Canvas
-          </div>
-      )}
     </div>
   );
 }

@@ -15,12 +15,18 @@ import { Input } from "@/components/ui/input";
 export function LibrarySidebar() {
   const { 
     documents, activeDocumentId, setActiveDocument, 
-    addDocument, isLibraryOpen, toggleLibrary 
+    addDocument, isLibraryOpen, toggleLibrary,
+    workspaces, activeWorkspaceId
   } = useAppState();
   const [searchQuery, setSearchQuery] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const filteredDocs = documents.filter(doc => 
+  const activeWS = workspaces.find(w => w.id === activeWorkspaceId);
+  const workspaceDocs = (activeWS?.documentIds || [])
+    .map(id => documents.find(d => d.id === id))
+    .filter((d): d is Document => !!d);
+
+  const filteredDocs = workspaceDocs.filter(doc => 
     doc.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 

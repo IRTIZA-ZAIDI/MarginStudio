@@ -77,7 +77,7 @@ export interface GeneratedAsset {
 
 export interface WhiteboardElement {
   id: string;
-  type: 'image' | 'text' | 'note' | 'shape';
+  type: 'image' | 'text' | 'note' | 'shape' | 'arrow' | 'line' | 'diamond';
   x: number;
   y: number;
   width?: number;
@@ -86,6 +86,7 @@ export interface WhiteboardElement {
   imageUrl?: string;
   color?: string;
   rotation?: number;
+  points?: { x: number; y: number }[];
 }
 
 export interface MagicOptions {
@@ -223,10 +224,19 @@ export const useAppState = create<AppState>((set, get) => ({
   })),
   addWorkspace: (ws) => set((state) => ({ workspaces: [...state.workspaces, ws] })),
   setActiveDocument: (activeDocumentId) => set({ activeDocumentId }),
-  addDocument: (doc) => set((state) => ({ 
-    documents: [...state.documents, doc],
-    activeDocumentId: state.activeDocumentId || doc.id
-  })),
+  addDocument: (doc) => set((state) => {
+    const updatedDocs = [...state.documents, doc];
+    const updatedWorkspaces = state.workspaces.map(ws => 
+      ws.id === state.activeWorkspaceId 
+        ? { ...ws, documentIds: Array.from(new Set([...ws.documentIds, doc.id])) }
+        : ws
+    );
+    return {
+      documents: updatedDocs,
+      workspaces: updatedWorkspaces,
+      activeDocumentId: state.activeDocumentId || doc.id
+    };
+  }),
   setNumPages: (numPages) => set({ numPages }),
   setStrokeColor: (strokeColor) => set({ strokeColor }),
   setScale: (scale) => set({ scale }),

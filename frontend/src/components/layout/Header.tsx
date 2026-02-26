@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import Link from "next/link";
+import { NewWorkspaceModal } from "./NewWorkspaceModal";
 
 export function Header() {
   const { setTheme } = useTheme();
@@ -28,6 +29,7 @@ export function Header() {
 
   const [isEditingWS, setIsEditingWS] = useState(false);
   const [wsName, setWsName] = useState(activeWS?.name || "");
+  const [showNewModal, setShowNewModal] = useState(false);
 
   useEffect(() => {
     setWsName(activeWS?.name || "");
@@ -101,20 +103,14 @@ export function Header() {
                 <div className="border-t border-border/50 my-1" />
                 <DropdownMenuItem 
                     className="rounded-lg gap-2 font-bold text-xs p-3 text-primary"
-                    onClick={() => {
-                        const name = prompt("Enter workspace name:");
-                        if (name) {
-                            const id = 'ws_' + Math.random().toString(36).substr(2, 9);
-                            addWorkspace({ id, name, documentIds: [] });
-                            setActiveWorkspace(id);
-                        }
-                    }}
+                    onClick={() => setShowNewModal(true)}
                 >
                   <Plus className="h-3.5 w-3.5" /> NEW WORKSPACE
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
         )}
+        <NewWorkspaceModal isOpen={showNewModal} onClose={() => setShowNewModal(false)} />
       </div>
 
       {/* Document Selector (Horizontal Tabs) */}
@@ -151,11 +147,11 @@ export function Header() {
             </Link>
 
             <button 
-                onClick={() => setActiveDocument(null)}
-                className="text-muted-foreground hover:text-destructive transition-colors hidden sm:flex items-center gap-2 font-black uppercase tracking-[0.15em] text-[10px] group"
+                onClick={() => setActiveWorkspace(null)}
+                className="text-muted-foreground hover:text-primary transition-colors hidden sm:flex items-center gap-2 font-black uppercase tracking-[0.15em] text-[10px] group"
             >
-                <LogOut className="h-3.5 w-3.5 group-hover:-translate-x-0.5 transition-transform" />
-                Exit
+                <LayoutGrid className="h-3.5 w-3.5 group-hover:scale-110 transition-transform" />
+                Dashboard
             </button>
         </div>
 
