@@ -17,30 +17,6 @@ export function Whiteboard() {
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
 
-  const handleAddNote = () => {
-    const id = Math.random().toString(36).substr(2, 9);
-    addWhiteboardElement({
-      id,
-      type: 'note',
-      x: 100 + Math.random() * 200,
-      y: 100 + Math.random() * 200,
-      content: 'Double click to edit',
-      color: '#fef08a' // yellow-200
-    });
-    setSelectedId(id);
-  };
-
-  const handleAddText = () => {
-    const id = Math.random().toString(36).substr(2, 9);
-    addWhiteboardElement({
-      id,
-      type: 'text',
-      x: 150,
-      y: 150,
-      content: 'New Text Block',
-    });
-    setSelectedId(id);
-  };
 
   const handleMouseDown = (e: React.MouseEvent, el: WhiteboardElement) => {
     setSelectedId(el.id);
@@ -74,31 +50,8 @@ export function Whiteboard() {
         onDoubleClick={() => setSelectedId(null)}
     >
       {/* Grid Background Overlay */}
-      <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[radial-gradient(#000_1px,transparent_1px)] dark:bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:24px_24px]" />
+      <div className="absolute inset-0 opacity-[0.4] pointer-events-none bg-[radial-gradient(#e5e7eb_1.5px,transparent_1.5px)] [background-size:32px_32px]" />
 
-      {/* Toolbar */}
-      <div className="absolute top-6 left-1/2 -translate-x-1/2 flex items-center gap-2 p-2 bg-background/80 backdrop-blur-xl border border-border/50 rounded-2xl shadow-2xl z-50">
-        <Button variant="ghost" size="icon" className="rounded-xl" onClick={() => setSelectedId(null)}>
-            <MousePointer2 className="h-4 w-4" />
-        </Button>
-        <div className="w-px h-4 bg-border/50 mx-1" />
-        <Button variant="ghost" size="icon" className="rounded-xl" onClick={handleAddText}>
-            <Type className="h-4 w-4" />
-        </Button>
-        <Button variant="ghost" size="icon" className="rounded-xl" onClick={handleAddNote}>
-            <StickyNote className="h-4 w-4" />
-        </Button>
-        <Button variant="ghost" size="icon" className="rounded-xl">
-            <Square className="h-4 w-4" />
-        </Button>
-        <Button variant="ghost" size="icon" className="rounded-xl">
-            <Circle className="h-4 w-4" />
-        </Button>
-        <div className="w-px h-4 bg-border/50 mx-1" />
-        <Button variant="destructive" size="icon" className="rounded-xl h-8 w-8" disabled={!selectedId} onClick={() => selectedId && removeWhiteboardElement(selectedId)}>
-            <Trash2 className="h-3.5 w-3.5" />
-        </Button>
-      </div>
 
       {/* Canvas Elements */}
       <div className="relative w-full h-full">

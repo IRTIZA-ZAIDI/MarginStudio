@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 import Link from "next/link";
 
 export function LandingPage() {
-  const { addDocument, setSignedIn } = useAppState();
+  const { addDocument, setSignedIn, setActiveWorkspace } = useAppState();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -25,6 +25,7 @@ export function LandingPage() {
                 url
             });
             setSignedIn(true);
+            setActiveWorkspace('ws_default');
         }
     });
   };
