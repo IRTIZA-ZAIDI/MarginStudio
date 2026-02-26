@@ -8,12 +8,14 @@ import {
     Cpu, Sparkles, BookOpen, HardDrive,
     Network, Lightbulb, UploadCloud, ChevronRight,
     Settings, HelpCircle, LogOut,
-    X
+    X, Zap
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { NewWorkspaceModal } from "./NewWorkspaceModal";
+import { WorkflowCanvas } from "./WorkflowCanvas";
+import { PipelineRunner } from "./PipelineRunner";
 
 export function Dashboard() {
   const { workspaces, setActiveWorkspace, addWorkspace, updateWorkspaceName } = useAppState();
@@ -43,8 +45,9 @@ export function Dashboard() {
         <nav className="flex-1 space-y-2">
             <div className="px-4 py-3 text-[9px] font-black uppercase tracking-[0.2em] text-muted-foreground/40">Knowledge Hub</div>
             {[
-                { id: 'graph', icon: <Network className="h-4 w-4" />, label: 'Knowledge Graph' },
                 { id: 'insights', icon: <Lightbulb className="h-4 w-4" />, label: 'Global Insights' },
+                { id: 'whiteboard', icon: <Network className="h-4 w-4" />, label: 'AI Whiteboard' },
+                { id: 'pipelines', icon: <Zap className="h-4 w-4" />, label: 'Pipelines' },
                 { id: 'uploads', icon: <UploadCloud className="h-4 w-4" />, label: 'Master Uploads' },
             ].map((item) => (
                 <button
@@ -113,71 +116,78 @@ export function Dashboard() {
         </header>
 
         <div className="flex-1 overflow-y-auto px-12 pb-20 custom-scrollbar relative z-20">
-            {/* Welcome */}
-            <div className="mb-14 pt-4">
-                <h2 className="text-5xl font-serif italic font-bold mb-4 tracking-tight">Active Research <br /> Environments</h2>
-                <div className="flex items-center gap-4 text-xs font-bold text-muted-foreground/50">
-                    <span className="flex items-center gap-2"><LayoutGrid className="h-4 w-4" /> {filteredWorkspaces.length} Spaces</span>
-                    <div className="w-1 h-1 rounded-full bg-border" />
-                    <span className="flex items-center gap-2"><BookOpen className="h-4 w-4" /> 1.2 GB Analyzed</span>
-                </div>
-            </div>
-
-            {/* Workspace Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {filteredWorkspaces.map((ws) => (
-                <div 
-                    key={ws.id} 
-                    onDoubleClick={() => setActiveWorkspace(ws.id)}
-                    className="group relative bg-card/30 border border-border/30 rounded-[44px] p-10 transition-all hover:bg-card hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-2 overflow-hidden backdrop-blur-sm cursor-pointer"
-                >
-                    <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-20 transition-all duration-700 group-hover:rotate-12">
-                        <Folder className="h-48 w-48 -mr-12 -mt-12" />
-                    </div>
-
-                    <div className="flex items-start justify-between mb-12 relative z-10">
-                        <div className="p-4 bg-primary/10 text-primary rounded-[24px] group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-500 shadow-inner">
-                            <Folder className="h-7 w-7" />
-                        </div>
-                        <Button variant="ghost" size="icon" className="rounded-2xl h-10 w-10 text-muted-foreground/40 hover:text-foreground hover:bg-secondary">
-                            <MoreVertical className="h-5 w-5" />
-                        </Button>
-                    </div>
-
-                    <div className="mb-12 relative z-10">
-                        <h3 className="text-2xl font-bold mb-3 tracking-tight group-hover:text-primary transition-colors">{ws.name}</h3>
-                        <div className="flex flex-wrap items-center gap-5 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40">
-                            <span className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary/50 border border-border/30"><BookOpen className="h-3 w-3" /> {ws.documentIds.length} Materials</span>
-                            <span className="flex items-center gap-2"><Sparkles className="h-3.5 w-3.5 text-primary/60" /> 14 Insights</span>
+            {activeMenu === 'whiteboard' && <WorkflowCanvas />}
+            {activeMenu === 'pipelines' && <PipelineRunner />}
+            
+            {activeMenu !== 'whiteboard' && activeMenu !== 'pipelines' && (
+                <>
+                    {/* Welcome */}
+                    <div className="mb-14 pt-4">
+                        <h2 className="text-5xl font-serif italic font-bold mb-4 tracking-tight">Active Research <br /> Environments</h2>
+                        <div className="flex items-center gap-4 text-xs font-bold text-muted-foreground/50">
+                            <span className="flex items-center gap-2"><LayoutGrid className="h-4 w-4" /> {filteredWorkspaces.length} Spaces</span>
+                            <div className="w-1 h-1 rounded-full bg-border" />
+                            <span className="flex items-center gap-2"><BookOpen className="h-4 w-4" /> 1.2 GB Analyzed</span>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-4 relative z-10">
-                        <Button 
-                            onClick={() => setActiveWorkspace(ws.id)}
-                            className="flex-1 rounded-[24px] h-14 font-black text-[11px] uppercase tracking-[0.2em] gap-3 bg-secondary/50 border-transparent text-foreground hover:bg-primary hover:text-primary-foreground group-hover:shadow-2xl transition-all"
+                    {/* Workspace Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                      {filteredWorkspaces.map((ws) => (
+                        <div 
+                            key={ws.id} 
+                            onDoubleClick={() => setActiveWorkspace(ws.id)}
+                            className="group relative bg-card/30 border border-border/30 rounded-[44px] p-10 transition-all hover:bg-card hover:shadow-2xl hover:shadow-primary/10 hover:-translate-y-2 overflow-hidden backdrop-blur-sm cursor-pointer"
                         >
-                            Open Node
-                            <ArrowRight className="h-4 w-4" />
-                        </Button>
-                    </div>
-                </div>
-              ))}
+                            <div className="absolute top-0 right-0 p-6 opacity-5 group-hover:opacity-20 transition-all duration-700 group-hover:rotate-12">
+                                <Folder className="h-48 w-48 -mr-12 -mt-12" />
+                            </div>
 
-              {/* Create Card */}
-              <button 
-                onClick={() => setShowNewModal(true)}
-                className="group border border-dashed border-border/50 rounded-[44px] p-10 flex flex-col items-center justify-center gap-6 transition-all hover:border-primary/50 hover:bg-primary/5 min-h-[400px]"
-              >
-                <div className="h-20 w-20 rounded-[32px] bg-secondary/50 flex items-center justify-center group-hover:scale-110 group-hover:bg-primary/10 transition-all duration-500 shadow-inner">
-                    <Plus className="h-10 w-10 text-muted-foreground/40 group-hover:text-primary" />
-                </div>
-                <div className="text-center">
-                    <div className="text-[11px] font-black uppercase tracking-[0.3em] text-muted-foreground/30 mb-2 group-hover:text-primary/70">Initialize Environment</div>
-                    <div className="text-lg font-bold">Launch New Space</div>
-                </div>
-              </button>
-            </div>
+                            <div className="flex items-start justify-between mb-12 relative z-10">
+                                <div className="p-4 bg-primary/10 text-primary rounded-[24px] group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-500 shadow-inner">
+                                    <Folder className="h-7 w-7" />
+                                </div>
+                                <Button variant="ghost" size="icon" className="rounded-2xl h-10 w-10 text-muted-foreground/40 hover:text-foreground hover:bg-secondary">
+                                    <MoreVertical className="h-5 w-5" />
+                                </Button>
+                            </div>
+
+                            <div className="mb-12 relative z-10">
+                                <h3 className="text-2xl font-bold mb-3 tracking-tight group-hover:text-primary transition-colors">{ws.name}</h3>
+                                <div className="flex flex-wrap items-center gap-5 text-[10px] font-black uppercase tracking-[0.2em] text-muted-foreground/40">
+                                    <span className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-secondary/50 border border-border/30"><BookOpen className="h-3 w-3" /> {ws.documentIds.length} Materials</span>
+                                    <span className="flex items-center gap-2"><Sparkles className="h-3.5 w-3.5 text-primary/60" /> 14 Insights</span>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-4 relative z-10">
+                                <Button 
+                                    onClick={() => setActiveWorkspace(ws.id)}
+                                    className="flex-1 rounded-[24px] h-14 font-black text-[11px] uppercase tracking-[0.2em] gap-3 bg-secondary/50 border-transparent text-foreground hover:bg-primary hover:text-primary-foreground group-hover:shadow-2xl transition-all"
+                                >
+                                    Open Node
+                                    <ArrowRight className="h-4 w-4" />
+                                </Button>
+                            </div>
+                        </div>
+                      ))}
+
+                      {/* Create Card */}
+                      <button 
+                        onClick={() => setShowNewModal(true)}
+                        className="group border border-dashed border-border/50 rounded-[44px] p-10 flex flex-col items-center justify-center gap-6 transition-all hover:border-primary/50 hover:bg-primary/5 min-h-[400px]"
+                      >
+                        <div className="h-20 w-20 rounded-[32px] bg-secondary/50 flex items-center justify-center group-hover:scale-110 group-hover:bg-primary/10 transition-all duration-500 shadow-inner">
+                            <Plus className="h-10 w-10 text-muted-foreground/40 group-hover:text-primary" />
+                        </div>
+                        <div className="text-center">
+                            <div className="text-[11px] font-black uppercase tracking-[0.3em] text-muted-foreground/30 mb-2 group-hover:text-primary/70">Initialize Environment</div>
+                            <div className="text-lg font-bold">Launch New Space</div>
+                        </div>
+                      </button>
+                    </div>
+                </>
+            )}
         </div>
 
         {/* Modal Overlay */}

@@ -41,7 +41,7 @@ export default function Home() {
   }
 
   return (
-    <div className="flex bg-background font-sans h-screen flex-col overflow-hidden text-foreground">
+    <div className="flex bg-background font-sans h-screen flex-col overflow-hidden text-foreground uppercase-none">
       <Header />
       <AnnotationToolbar />
       <div className="flex-1 overflow-hidden relative flex">
@@ -80,11 +80,14 @@ export default function Home() {
                  ))}
                </div>
 
-               <div className="flex-1 overflow-auto relative custom-scrollbar bg-[radial-gradient(#e5e7eb_px,transparent_1px)] dark:bg-[radial-gradient(#1f2937_1px,transparent_1px)] [background-size:32px_32px]">
+               <div className="flex-1 overflow-auto relative custom-scrollbar bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] dark:bg-[radial-gradient(#1f2937_1px,transparent_1px)] [background-size:32px_32px]">
                    {activeTab === 'reader' && (
-                       <div className="min-h-screen pb-32">
+                       <div className="min-h-screen pb-32 relative">
                           {activeDoc ? (
-                            <PDFRenderer url={activeDoc.url} />
+                            <>
+                                <PDFRenderer url={activeDoc.url} />
+                                <MagicToolbar />
+                            </>
                           ) : (
                             <div className="flex items-center justify-center h-full text-muted-foreground uppercase text-[10px] font-black tracking-widest">
                                Select a document to begin analysis

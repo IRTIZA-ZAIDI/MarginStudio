@@ -39,9 +39,9 @@ export function AISidebar() {
   // No need for!isSidebarOpen UI here anymore, handled in parent
 
   return (
-    <div className="flex flex-col h-full w-full border-l border-border bg-card/50">
+    <div className="flex flex-col h-full w-full border-l border-primary/20 bg-card/50">
       {/* Header */}
-      <div className="flex items-center justify-between h-12 px-4 border-b border-border shrink-0">
+      <div className="flex items-center justify-between h-12 px-4 border-b border-primary/10 shrink-0">
         <div className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-primary" />
           <span className="font-semibold text-sm">AI Assistant</span>

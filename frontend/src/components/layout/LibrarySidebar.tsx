@@ -48,7 +48,7 @@ export function LibrarySidebar() {
 
   if (!isLibraryOpen) {
     return (
-        <div className="h-full w-12 border-r bg-card/30 flex flex-col items-center py-4 gap-4 animate-in slide-in-from-left duration-300">
+        <div className="h-full w-12 border-r border-primary/20 bg-card/30 flex flex-col items-center py-4 gap-4 animate-in slide-in-from-left duration-300">
             <Button variant="ghost" size="icon" onClick={toggleLibrary} className="rounded-xl">
                 <ChevronRight className="h-4 w-4" />
             </Button>
@@ -71,9 +71,9 @@ export function LibrarySidebar() {
   }
 
   return (
-    <div className="h-full w-72 border-r bg-card/50 flex flex-col animate-in slide-in-from-left duration-300">
+    <div className="h-full w-72 border-r border-primary/20 bg-card/50 flex flex-col animate-in slide-in-from-left duration-300">
       {/* Header */}
-      <div className="p-6 border-b border-border/50">
+      <div className="p-6 border-b border-primary/10">
         <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
                 <div className="p-2 rounded-xl bg-primary/10 text-primary">

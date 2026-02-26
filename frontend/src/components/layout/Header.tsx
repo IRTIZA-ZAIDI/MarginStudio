@@ -3,7 +3,11 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { FileText, Moon, Sun, Monitor, LogOut, LayoutGrid, ChevronDown, Plus, Library } from "lucide-react";
+import { 
+    FileText, Moon, Sun, Monitor, LogOut, 
+    LayoutGrid, ChevronDown, Plus, Library, 
+    PencilLine, X 
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTheme } from "next-themes";
 import { useAppState } from "@/store/useAppState";
@@ -85,10 +89,16 @@ export function Header() {
                 <Button 
                     variant="ghost" 
                     onDoubleClick={() => setIsEditingWS(true)}
-                    className="h-9 gap-2 px-3 rounded-xl hover:bg-secondary font-black text-[10px] uppercase tracking-[0.15em] text-muted-foreground/80"
+                    className="h-9 gap-3 px-3 rounded-xl hover:bg-secondary font-black text-[10px] uppercase tracking-[0.15em] text-muted-foreground/80 group"
                 >
                   <LayoutGrid className="h-3.5 w-3.5 text-primary/60" />
                   {activeWS?.name || "Workspace"}
+                  <div 
+                    onClick={(e) => { e.stopPropagation(); setIsEditingWS(true); }}
+                    className="ml-1 p-1 rounded-md hover:bg-primary/10 text-muted-foreground/0 group-hover:text-primary transition-all cursor-pointer"
+                  >
+                    <PencilLine className="h-3 w-3" />
+                  </div>
                   <ChevronDown className="h-3 w-3 opacity-50" />
                 </Button>
               </DropdownMenuTrigger>

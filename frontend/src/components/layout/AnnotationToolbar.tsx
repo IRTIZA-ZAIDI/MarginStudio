@@ -139,7 +139,7 @@ export function AnnotationToolbar() {
   };
 
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 bg-background/80 backdrop-blur-3xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] border border-white/20 dark:border-white/10 p-2.5 rounded-3xl transition-all duration-500 animate-in fade-in slide-in-from-bottom-12">
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 bg-background/80 backdrop-blur-3xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] border border-primary/30 p-2.5 rounded-3xl transition-all duration-500 animate-in fade-in slide-in-from-bottom-12">
       
       {/* Dynamic Tools Group */}
       <div className="flex items-center gap-1.5 p-1 bg-secondary/50 rounded-2xl border border-white/10">

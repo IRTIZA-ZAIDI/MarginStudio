@@ -30,7 +30,7 @@ export function ChatInput({ onSend, isLoading }: ChatInputProps) {
   };
 
   return (
-    <div className="p-6 border-t bg-background transition-colors">
+    <div className="p-6 border-t border-primary/10 bg-background transition-colors">
       {currentSelection && (
         <div className="mb-4 animate-in slide-in-from-bottom-2 duration-300">
             <div className="group relative flex flex-col gap-1 rounded-[20px] bg-secondary border border-border p-4 text-[13px] text-foreground shadow-sm">
