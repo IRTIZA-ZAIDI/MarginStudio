@@ -21,7 +21,8 @@ import {
   Redo,
   History,
   Save,
-  Check
+  Check,
+  Download
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -33,6 +34,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
+import { exportAnnotatedPDF } from "@/lib/pdf-export";
 
 export function AnnotationToolbar() {
   const { 
@@ -41,7 +43,7 @@ export function AnnotationToolbar() {
     strokeColor, setStrokeColor,
     undo, redo, history, future,
     versionHistory, saveVersion, restoreVersion,
-    annotations
+    annotations, fileUrl
   } = useAppState();
 
   const [versionName, setVersionName] = useState("");
@@ -58,12 +60,12 @@ export function AnnotationToolbar() {
   ];
 
   const colors = [
+    { name: 'Teal', value: '#0f766e' },
     { name: 'Yellow', value: '#fde047' },
     { name: 'Green', value: '#86efac' },
     { name: 'Blue', value: '#93c5fd' },
     { name: 'Purple', value: '#d8b4fe' },
     { name: 'Red', value: '#fca5a5' },
-    { name: 'Green (Anthropic)', value: '#2d7a5f' },
   ];
 
   const handleSaveVersion = () => {
@@ -74,8 +76,8 @@ export function AnnotationToolbar() {
   };
 
   return (
-    <div className="flex h-14 items-center justify-between border-b px-4 bg-background sticky top-20 z-40 transition-colors">
-      <div className="flex items-center gap-1.5 p-1 bg-secondary rounded-full border border-border">
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-4 bg-background/80 backdrop-blur-3xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] border border-white/20 dark:border-white/10 p-2.5 rounded-3xl transition-all duration-500 animate-in fade-in slide-in-from-bottom-12">
+      <div className="flex items-center gap-1.5 p-1 bg-secondary/50 rounded-2xl border border-white/10">
         {tools.map((tool) => (
           <Tooltip key={tool.mode}>
             <TooltipTrigger asChild>
@@ -84,16 +86,18 @@ export function AnnotationToolbar() {
                 size="icon"
                 onClick={() => setToolMode(tool.mode)}
                 className={cn(
-                    "h-8 w-8 rounded-full transition-all duration-300",
+                    "h-10 w-10 rounded-xl transition-all duration-300",
                     toolMode === tool.mode 
-                        ? "bg-primary text-primary-foreground shadow-sm scale-105" 
-                        : "text-muted-foreground hover:text-foreground hover:bg-background"
+                        ? (tool.mode === 'select' || tool.mode === 'area' || tool.mode === 'eraser' 
+                            ? "bg-foreground text-background shadow-lg scale-110" 
+                            : "bg-primary text-primary-foreground shadow-lg scale-110 ring-4 ring-primary/20")
+                        : "text-muted-foreground hover:text-foreground hover:bg-background/80"
                 )}
               >
                 {tool.icon}
               </Button>
             </TooltipTrigger>
-            <TooltipContent side="bottom" className="rounded-lg font-bold text-[10px] uppercase tracking-wider">
+            <TooltipContent side="top" className="rounded-lg font-bold text-[10px] uppercase tracking-wider mb-2">
               {tool.label}
             </TooltipContent>
           </Tooltip>
@@ -101,15 +105,15 @@ export function AnnotationToolbar() {
 
         {/* Color Picker (Only for relevant tools) */}
         {(toolMode === 'highlight' || toolMode === 'pen' || toolMode === 'text') && (
-            <div className="flex items-center gap-2 px-2 animate-in fade-in slide-in-from-left-2">
-                <div className="w-px h-5 bg-border mx-1" />
+            <div className="flex items-center gap-2 px-3 animate-in fade-in slide-in-from-left-4">
+                <div className="w-px h-6 bg-border mx-1" />
                 {colors.map((c) => (
                     <button
                         key={c.value}
                         onClick={() => setStrokeColor(c.value)}
                         className={cn(
-                            "w-4 h-4 rounded-full transition-all duration-300 ring-offset-2 ring-offset-background",
-                            strokeColor === c.value ? "ring-2 ring-primary scale-125" : "hover:scale-110 opacity-70 hover:opacity-100"
+                            "w-5 h-5 rounded-full transition-all duration-300 ring-offset-2 ring-offset-background/80",
+                            strokeColor === c.value ? "ring-2 ring-primary scale-125 shadow-md" : "hover:scale-110 opacity-70 hover:opacity-100"
                         )}
                         style={{ backgroundColor: c.value }}
                         title={c.name}
@@ -119,54 +123,56 @@ export function AnnotationToolbar() {
         )}
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="w-px h-8 bg-border" />
+
+      <div className="flex items-center gap-2">
         {/* Undo / Redo */}
-        <div className="flex items-center gap-1 p-1 bg-secondary rounded-full border border-border">
+        <div className="flex items-center gap-1 p-1 bg-secondary/50 rounded-2xl border border-white/10">
             <Tooltip>
                 <TooltipTrigger asChild>
                     <Button 
                         variant="ghost" 
                         size="icon" 
-                        className={cn("h-7 w-7 rounded-full transition-opacity", history.length === 0 && "opacity-30 pointer-events-none")} 
+                        className={cn("h-10 w-10 rounded-xl transition-all hover:bg-background/80", history.length === 0 && "opacity-30 pointer-events-none")} 
                         onClick={() => undo()}
                     >
-                        <Undo className="h-3.5 w-3.5" />
+                        <Undo className="h-4 w-4" />
                     </Button>
                 </TooltipTrigger>
-                <TooltipContent className="text-[10px] font-bold uppercase tracking-wider">Undo</TooltipContent>
+                <TooltipContent side="top" className="mb-2 text-[10px] font-bold uppercase tracking-wider">Undo</TooltipContent>
             </Tooltip>
             <Tooltip>
                 <TooltipTrigger asChild>
                     <Button 
                         variant="ghost" 
                         size="icon" 
-                        className={cn("h-7 w-7 rounded-full transition-opacity", future.length === 0 && "opacity-30 pointer-events-none")} 
+                        className={cn("h-10 w-10 rounded-xl transition-all hover:bg-background/80", future.length === 0 && "opacity-30 pointer-events-none")} 
                         onClick={() => redo()}
                     >
-                        <Redo className="h-3.5 w-3.5" />
+                        <Redo className="h-4 w-4" />
                     </Button>
                 </TooltipTrigger>
-                <TooltipContent className="text-[10px] font-bold uppercase tracking-wider">Redo</TooltipContent>
+                <TooltipContent side="top" className="mb-2 text-[10px] font-bold uppercase tracking-wider">Redo</TooltipContent>
             </Tooltip>
         </div>
 
         {/* Version History */}
-        <div className="flex items-center gap-1 p-1 bg-secondary rounded-full border border-border">
+        <div className="flex items-center gap-1 p-1 bg-secondary/50 rounded-2xl border border-white/10">
             <DropdownMenu>
                 <Tooltip>
                     <TooltipTrigger asChild>
                         <DropdownMenuTrigger asChild>
-                            <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full">
-                                <History className="h-3.5 w-3.5" />
+                            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-background/80">
+                                <History className="h-4 w-4" />
                             </Button>
                         </DropdownMenuTrigger>
                     </TooltipTrigger>
-                    <TooltipContent className="text-[10px] font-bold uppercase tracking-wider">Versions</TooltipContent>
+                    <TooltipContent side="top" className="mb-2 text-[10px] font-bold uppercase tracking-wider">Versions</TooltipContent>
                 </Tooltip>
-                <DropdownMenuContent align="end" className="w-64 rounded-xl shadow-2xl p-2">
+                <DropdownMenuContent align="center" side="top" className="w-64 mb-4 rounded-xl shadow-2xl p-2 border-white/10">
                     <DropdownMenuLabel className="text-[10px] font-black uppercase tracking-widest text-muted-foreground flex items-center justify-between">
                         Version History
-                        <Button variant="ghost" size="icon" className="h-5 w-5 hover:bg-primary/10 hover:text-primary rounded-full" onClick={() => setIsSaving(!isSaving)}>
+                        <Button variant="ghost" size="icon" className="h-6 w-6 hover:bg-primary/10 hover:text-primary rounded-full" onClick={() => setIsSaving(!isSaving)}>
                             <Save className="h-3 w-3" />
                         </Button>
                     </DropdownMenuLabel>
@@ -206,16 +212,37 @@ export function AnnotationToolbar() {
         </div>
 
         {/* Zoom */}
-        <div className="flex items-center gap-1 bg-secondary p-1 rounded-full border border-border">
-            <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full hover:bg-background" onClick={() => zoomOut()}>
+        <div className="flex items-center gap-1 bg-secondary/50 p-1 rounded-2xl border border-white/10">
+            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-background/80" onClick={() => zoomOut()}>
                 <span className="text-sm font-bold leading-none">-</span>
             </Button>
             <div className="text-[10px] font-bold w-12 text-center text-muted-foreground tracking-widest uppercase px-1">
                 {Math.round(scale * 100)}%
             </div>
-            <Button variant="ghost" size="icon" className="h-7 w-7 rounded-full hover:bg-background" onClick={() => zoomIn()}>
+            <Button variant="ghost" size="icon" className="h-10 w-10 rounded-xl hover:bg-background/80" onClick={() => zoomIn()}>
                 <span className="text-sm font-bold leading-none">+</span>
             </Button>
+        </div>
+
+        {/* Download */}
+        <div className="flex items-center gap-1 p-1 bg-secondary/50 rounded-2xl border border-white/10">
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-10 w-10 rounded-xl hover:bg-background/80"
+                onClick={() => {
+                  if (fileUrl) {
+                    exportAnnotatedPDF(fileUrl, annotations);
+                  }
+                }}
+              >
+                <Download className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side="top" className="mb-2 text-[10px] font-bold uppercase tracking-wider">Download PDF</TooltipContent>
+          </Tooltip>
         </div>
       </div>
     </div>

@@ -105,6 +105,12 @@ interface AppState {
   chatHistory: Message[];
   isLoading: boolean;
 
+  // Studio Tabs
+  activeTab: string;
+  setActiveTab: (tab: string) => void;
+  numPages: number;
+  setNumPages: (n: number) => void;
+
   // Actions
   setScale: (scale: number) => void;
   zoomIn: () => void;
@@ -136,23 +142,34 @@ export const useAppState = create<AppState>((set, get) => ({
   future: [],
   versionHistory: [],
   selectedModel: 'claude-3-5-sonnet',
-  strokeColor: '#2d7a5f', // Anthropic Green
+  strokeColor: '#0f766e', // Teal
   chatHistory: [],
   isLoading: false,
+  activeTab: 'reader',
+  numPages: 0,
 
   // Actions
+  setNumPages: (numPages) => set({ numPages }),
   setFileUrl: (fileUrl) => set({ fileUrl }),
   setStrokeColor: (strokeColor) => set({ strokeColor }),
   setScale: (scale) => set({ scale }),
   setIsGenerating: (isGenerating) => set({ isGenerating }),
-  addAsset: (asset) => set((state) => ({ assets: [asset, ...state.assets] })),
+  setActiveTab: (activeTab) => set({ activeTab }),
+  addAsset: (asset) => set((state) => ({ 
+    assets: [asset, ...state.assets],
+    activeTab: 'assets' // Switch to assets view
+  })),
   zoomIn: () => set((state) => ({ scale: Math.min(state.scale + 0.1, 3) })),
   zoomOut: () => set((state) => ({ scale: Math.max(state.scale - 0.1, 0.5) })),
   setCurrentPage: (currentPage) => set({ currentPage }),
   setToolMode: (toolMode) => set({ toolMode }),
   toggleSidebar: () => set((state) => ({ isSidebarOpen: !state.isSidebarOpen })),
   setSidebarOpen: (isSidebarOpen) => set({ isSidebarOpen }),
-  setCurrentSelection: (currentSelection) => set({ currentSelection }),
+  setCurrentSelection: (currentSelection) => set((state) => ({ 
+      currentSelection, 
+      // Auto-open sidebar if selecting something new
+      isSidebarOpen: currentSelection ? true : state.isSidebarOpen 
+  })),
   setSelectedModel: (selectedModel) => set({ selectedModel }),
 
   saveToHistory: (stateOverride) => {

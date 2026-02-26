@@ -41,7 +41,7 @@ const STICKY_COLORS = [
 ];
 
 const TEXT_COLORS = [
-    { name: 'Sage', value: '#2d7a5f' },
+    { name: 'Teal', value: '#0f766e' },
     { name: 'Red', value: '#ef4444' },
     { name: 'Blue', value: '#3b82f6' },
     { name: 'Amber', value: '#f59e0b' },
@@ -55,10 +55,19 @@ export function AnnotationItem({ annotation, width, height }: AnnotationItemProp
   
   const [isDragging, setIsDragging] = useState(false);
   const [isResizing, setIsResizing] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(annotation.content === "");
   const [editValue, setEditValue] = useState(annotation.content || "");
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [showToolbar, setShowToolbar] = useState(false);
+  
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    if (isEditing && textareaRef.current) {
+        textareaRef.current.focus();
+        textareaRef.current.select();
+    }
+  }, [isEditing]);
   
   const itemRef = useRef<HTMLDivElement>(null);
 
@@ -70,6 +79,13 @@ export function AnnotationItem({ annotation, width, height }: AnnotationItemProp
     width: (coordinates.x2 - coordinates.x1) * width,
     height: (coordinates.y2 - coordinates.y1) * height,
   };
+
+  // Auto-edit new empty text/sticky annotations
+  useEffect(() => {
+    if ((type === 'text' || type === 'sticky') && content === "" && !isEditing) {
+      // setIsEditing is handled in initial state
+    }
+  }, [type, content, isEditing]);
 
   // ----------------------------------------------------------------------
   // Interaction Handlers
@@ -86,6 +102,8 @@ export function AnnotationItem({ annotation, width, height }: AnnotationItemProp
             setIsDragging(true);
             setDragStart({ x: e.clientX, y: e.clientY });
             setShowToolbar(true);
+            // Ensure document selection doesn't interfere
+            window.getSelection()?.removeAllRanges();
         }
     }
   };
@@ -130,30 +148,33 @@ export function AnnotationItem({ annotation, width, height }: AnnotationItemProp
   useEffect(() => {
     if (!isDragging && !isResizing) return;
 
+    let rafId: number;
     const handleMouseMove = (e: MouseEvent) => {
-        const dx = (e.clientX - dragStart.x) / width;
-        const dy = (e.clientY - dragStart.y) / height;
+        rafId = requestAnimationFrame(() => {
+            const dx = (e.clientX - dragStart.x) / width;
+            const dy = (e.clientY - dragStart.y) / height;
 
-        if (isDragging) {
-            updateAnnotation(id, {
-                coordinates: {
-                    x1: coordinates.x1 + dx,
-                    y1: coordinates.y1 + dy,
-                    x2: coordinates.x2 + dx,
-                    y2: coordinates.y2 + dy,
-                }
-            }, false);
-            setDragStart({ x: e.clientX, y: e.clientY });
-        } else if (isResizing) {
-            updateAnnotation(id, {
-                coordinates: {
-                    ...coordinates,
-                    x2: coordinates.x2 + dx,
-                    y2: coordinates.y2 + dy,
-                }
-            }, false);
-            setDragStart({ x: e.clientX, y: e.clientY });
-        }
+            if (isDragging) {
+                updateAnnotation(id, {
+                    coordinates: {
+                        x1: coordinates.x1 + dx,
+                        y1: coordinates.y1 + dy,
+                        x2: coordinates.x2 + dx,
+                        y2: coordinates.y2 + dy,
+                    }
+                }, false); // final=false to avoid history spam
+                setDragStart({ x: e.clientX, y: e.clientY });
+            } else if (isResizing) {
+                updateAnnotation(id, {
+                    coordinates: {
+                        ...coordinates,
+                        x2: coordinates.x2 + dx,
+                        y2: coordinates.y2 + dy,
+                    }
+                }, false);
+                setDragStart({ x: e.clientX, y: e.clientY });
+            }
+        });
     };
 
     const handleMouseUp = () => {
@@ -165,6 +186,7 @@ export function AnnotationItem({ annotation, width, height }: AnnotationItemProp
     window.addEventListener('mousemove', handleMouseMove);
     window.addEventListener('mouseup', handleMouseUp);
     return () => {
+        cancelAnimationFrame(rafId);
         window.removeEventListener('mousemove', handleMouseMove);
         window.removeEventListener('mouseup', handleMouseUp);
     };
@@ -183,13 +205,6 @@ export function AnnotationItem({ annotation, width, height }: AnnotationItemProp
     }
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [showToolbar, isEditing, editValue]);
-
-  // Automatically start editing for fresh empty notes to save clicks
-  useEffect(() => {
-    if ((type === 'text' || type === 'sticky') && content === "" && !isEditing) {
-        setIsEditing(true);
-    }
-  }, [type, content, isEditing]);
 
   // ----------------------------------------------------------------------
   // Render Components
@@ -288,33 +303,35 @@ export function AnnotationItem({ annotation, width, height }: AnnotationItemProp
   );
 
   if (type === 'highlight') {
-    const renderRect = (rect: any, key: any) => (
-        <div
-            key={key}
+    const isEraser = toolMode === 'eraser';
+    const rectsToRender = (annotation.rects && annotation.rects.length > 0) 
+        ? annotation.rects 
+        : [coordinates];
+
+    return (
+        <svg 
             className={cn(
-                "absolute mix-blend-multiply opacity-50 transition-shadow",
-                toolMode === 'eraser' ? "cursor-pointer hover:ring-2 hover:ring-red-500 hover:opacity-80 pointer-events-auto" : "pointer-events-none"
+                "absolute inset-0 transition-opacity pointer-events-none",
+                !isEraser && "opacity-40",
+                isEraser && "cursor-pointer hover:ring-2 hover:ring-red-500 hover:opacity-80 pointer-events-auto opacity-40"
             )}
-            style={{
-                left: rect.x1 * width,
-                top: rect.y1 * height,
-                width: (rect.x2 - rect.x1) * width,
-                height: (rect.y2 - rect.y1) * height,
-                backgroundColor: color || 'var(--primary)',
-            }}
-            onClick={() => toolMode === 'eraser' && removeAnnotation(id)}
-        />
+            width={width}
+            height={height}
+            onClick={() => isEraser && removeAnnotation(id)}
+        >
+            {rectsToRender.map((r, i) => (
+                <rect
+                    key={`${id}-${i}`}
+                    x={r.x1 * width}
+                    y={r.y1 * height}
+                    width={Math.max(1, (r.x2 - r.x1) * width)}
+                    height={Math.max(1, (r.y2 - r.y1) * height)}
+                    fill={color || 'var(--primary)'}
+                    className={cn(isEraser && "pointer-events-auto")}
+                />
+            ))}
+        </svg>
     );
-
-    if (annotation.rects && annotation.rects.length > 0) {
-        return (
-            <>
-                {annotation.rects.map((r, i) => renderRect(r, `${id}-${i}`))}
-            </>
-        );
-    }
-
-    return renderRect(coordinates, id);
   }
 
   if (type === 'text') {
@@ -349,7 +366,7 @@ export function AnnotationItem({ annotation, width, height }: AnnotationItemProp
                 {isEditing ? (
                     <div className="flex flex-col gap-2 bg-card border border-primary p-2 rounded-lg shadow-2xl animate-in zoom-in-95 pointer-events-auto min-w-[200px]">
                         <textarea
-                            autoFocus
+                            ref={textareaRef}
                             className="bg-transparent border-none focus:ring-0 text-sm font-medium w-full resize-y min-h-[60px]"
                             value={editValue}
                             onChange={(e) => setEditValue(e.target.value)}
@@ -413,7 +430,7 @@ export function AnnotationItem({ annotation, width, height }: AnnotationItemProp
 
             {isEditing ? (
                 <textarea
-                    autoFocus
+                    ref={textareaRef}
                     className="bg-transparent border-none focus:ring-0 text-sm font-bold italic w-full h-full resize-none text-slate-800 placeholder:text-slate-400"
                     placeholder="Type your thoughts..."
                     value={editValue}

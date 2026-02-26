@@ -24,11 +24,28 @@ export function InteractionLayer({ pageNumber, width, height }: InteractionLayer
     addAnnotation, 
     strokeColor, 
     sendMessage,
-    setSidebarOpen
+    setSidebarOpen,
+    setToolMode
   } = useAppState();
   const { theme } = useTheme();
   
   const layerRef = useRef<HTMLDivElement>(null);
+  
+  // Clear selection when clicking outside PDF
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (layerRef.current && !layerRef.current.contains(e.target as Node)) {
+        // Check if click is outside all PDF layers
+        const pdfContainer = layerRef.current.closest('.pdf-container');
+        if (pdfContainer && !pdfContainer.contains(e.target as Node)) {
+          setCurrentSelection(null);
+        }
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [setCurrentSelection]);
   
   // Area Selection State
   const [isDrawingArea, setIsDrawingArea] = useState(false);
@@ -42,6 +59,9 @@ export function InteractionLayer({ pageNumber, width, height }: InteractionLayer
   const handleContextAction = (action: string) => {
     if (!currentSelection) return;
     
+    // Clear browser selection immediately to prevent re-trigger on subsequent mouse events
+    window.getSelection()?.removeAllRanges();
+
     if (action === 'more') return;
 
     let prompt = "";
@@ -49,13 +69,13 @@ export function InteractionLayer({ pageNumber, width, height }: InteractionLayer
     if (action === 'summarize') prompt = "Summarize this selection in a few bullet points.";
     if (action === 'ask_ai') {
         setSidebarOpen(true);
-        // Do NOT null selection here so user can type their own question
+        // We keep currentSelection so it stays attached to the ChatInput
         return;
     }
 
     if (prompt) {
         sendMessage(prompt, currentSelection);
-        setCurrentSelection(null); // Clear to close menu and prevent redundant calls
+        setCurrentSelection(null); // Clear to close menu
     }
   };
 
@@ -141,6 +161,7 @@ export function InteractionLayer({ pageNumber, width, height }: InteractionLayer
                           pageNumber,
                           coordinates: normalized
                       });
+                      setSidebarOpen(true);
                   }
               }
          }
@@ -171,17 +192,30 @@ export function InteractionLayer({ pageNumber, width, height }: InteractionLayer
         setCurrentRect({ x, y, w: 0, h: 0 });
         if (currentSelection?.pageNumber !== pageNumber) setCurrentSelection(null);
     } else if (toolMode === 'text' || toolMode === 'sticky') {
-        if (!textInputPos) {
-            const rect = layerRef.current?.getBoundingClientRect();
-            if (!rect) return;
-            const x = e.clientX - rect.left;
-            const y = e.clientY - rect.top;
-            setTextInputPos({ x, y });
-        } else {
-            if (!textValue.trim()) {
-                setTextInputPos(null);
-            }
-        }
+        // Immediately create annotation with empty content
+        const rect = layerRef.current?.getBoundingClientRect();
+        if (!rect) return;
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+        
+        const normalized = {
+          x1: x / width,
+          y1: y / height,
+          x2: (x + (toolMode === 'sticky' ? 180 : 150)) / width,
+          y2: (y + (toolMode === 'sticky' ? 180 : 30)) / height,
+        };
+        
+        addAnnotation({
+            id: uuidv4(),
+            type: toolMode === 'sticky' ? 'sticky' : 'text',
+            pageNumber,
+            coordinates: normalized,
+            content: "", // Empty content triggers auto-edit in AnnotationItem
+            color: toolMode === 'sticky' ? '#fef08a' : (strokeColor === '#fde047' ? undefined : strokeColor),
+            createdAt: Date.now()
+        });
+        // Single-use for text/sticky: revert to select to prevent accidental creation
+        setToolMode('select');
     } else if (toolMode === 'pen') {
         const rect = layerRef.current?.getBoundingClientRect();
         if (!rect) return;
@@ -228,6 +262,8 @@ export function InteractionLayer({ pageNumber, width, height }: InteractionLayer
             pageNumber,
             coordinates: normalized
         });
+        setSidebarOpen(true);
+        setToolMode('select'); // Untoggle after one use
         setStartPoint(null);
         setCurrentRect(null);
     } else {
@@ -251,39 +287,7 @@ export function InteractionLayer({ pageNumber, width, height }: InteractionLayer
     }
   };
 
-  const commitText = () => {
-      if (textInputPos && textValue.trim()) {
-           const normalized = {
-             x1: textInputPos.x / width,
-             y1: textInputPos.y / height,
-             x2: (textInputPos.x + (toolMode === 'sticky' ? 180 : 150)) / width,
-             y2: (textInputPos.y + (toolMode === 'sticky' ? 180 : 30)) / height,
-           };
-           
-           addAnnotation({
-               id: uuidv4(),
-               type: toolMode === 'sticky' ? 'sticky' : 'text',
-               pageNumber,
-               coordinates: normalized,
-               content: textValue,
-               color: toolMode === 'sticky' ? '#fef08a' : (strokeColor === '#fde047' ? undefined : strokeColor),
-               createdAt: Date.now()
-           });
-      }
-      setTextInputPos(null);
-      setTextValue("");
-  };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-      if (e.key === 'Enter') {
-          e.preventDefault();
-          commitText();
-      }
-      if (e.key === 'Escape') {
-          setTextInputPos(null);
-          setTextValue("");
-      }
-  };
 
   return (
     <div
@@ -311,54 +315,42 @@ export function InteractionLayer({ pageNumber, width, height }: InteractionLayer
 
       {isDrawingArea && currentRect && (
         <div
-          className="absolute border-2 border-primary bg-primary/10 shadow-[0_0_15px_rgba(45,122,95,0.2)]"
-          style={{ left: currentRect.x, top: currentRect.y, width: currentRect.w, height: currentRect.h }}
-        />
+          className="absolute border-2 border-primary bg-primary/5 rounded shadow-[0_0_20px_rgba(45,122,95,0.3)] animate-pulse"
+          style={{ 
+            left: currentRect.x, 
+            top: currentRect.y, 
+            width: currentRect.w, 
+            height: currentRect.h,
+            boxShadow: '0 0 0 100vw rgba(0,0,0,0.1)'
+          }}
+        >
+            <div className="absolute top-0 right-0 -translate-y-full px-2 py-1 bg-primary text-white text-[9px] font-black uppercase tracking-widest rounded-t">Capturing Region</div>
+        </div>
       )}
       
-      {textInputPos && (
-          <div
-            className="absolute z-[100] p-2 bg-background/95 backdrop-blur-md rounded-xl shadow-2xl border border-primary/20 animate-in zoom-in-95 duration-200"
-            style={{ left: textInputPos.x, top: textInputPos.y }}
-            onMouseDown={(e) => e.stopPropagation()}
-          >
-              <Input 
-                autoFocus
-                className={cn(
-                    "min-h-10 bg-transparent border-none focus-visible:ring-0 text-sm font-medium",
-                    toolMode === 'sticky' ? "w-56 italic p-0" : "w-72"
-                )}
-                placeholder={toolMode === 'sticky' ? "What's on your mind?" : "Type your note..."}
-                value={textValue}
-                onChange={(e) => setTextValue(e.target.value)}
-                onKeyDown={handleKeyDown}
-                style={{ color: toolMode === 'sticky' ? '#1d1d1b' : strokeColor }} 
-              />
-              <div className="flex justify-end gap-2 px-1 pt-1 opacity-60">
-                  <Button size="icon" variant="ghost" className="h-7 w-7 rounded-lg" onClick={() => { setTextInputPos(null); setTextValue(""); }}><X className="h-4 w-4" /></Button>
-                  <Button size="icon" variant="ghost" className="h-7 w-7 rounded-lg text-primary" onClick={commitText}><Check className="h-4 w-4" /></Button>
-              </div>
-          </div>
-      )}
-
+      
       {currentSelection?.pageNumber === pageNumber && !isDrawingArea && (
          <>
             {currentSelection.type === 'area' && (
                 <div
-                    className="absolute border-4 border-primary ring-[200vw] ring-black/40"
+                    className="absolute border-2 border-primary bg-primary/5 rounded-lg ring-[100vw] ring-black/40 shadow-[0_0_40px_rgba(45,122,95,0.4)] animate-in zoom-in-95 duration-300"
                     style={{
                         left: currentSelection.coordinates.x1 * width,
                         top: currentSelection.coordinates.y1 * height,
                         width: (currentSelection.coordinates.x2 - currentSelection.coordinates.x1) * width,
                         height: (currentSelection.coordinates.y2 - currentSelection.coordinates.y1) * height,
                     }}
-                />
+                >
+                    <div className="absolute -top-3 left-1/2 -translate-x-1/2 h-6 w-12 bg-primary rounded-full flex items-center justify-center shadow-lg">
+                        <Check className="h-3 w-3 text-white" />
+                    </div>
+                </div>
             )}
             
             <FloatingContextMenu
                 position={{
-                    x: (currentSelection.coordinates.x2) * width, 
-                    y: (currentSelection.coordinates.y1) * height
+                    x: (currentSelection.coordinates.x1 + (currentSelection.coordinates.x2 - currentSelection.coordinates.x1)/2) * width, 
+                    y: (currentSelection.coordinates.y2) * height
                 }}
                 onAction={handleContextAction}
             />

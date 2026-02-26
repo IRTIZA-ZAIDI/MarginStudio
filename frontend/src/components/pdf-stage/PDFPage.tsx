@@ -15,8 +15,9 @@ export function PDFPage({ pageNumber, scale, width }: PDFPageProps) {
   const [pageDimensions, setPageDimensions] = useState<{ width: number; height: number } | null>(null);
 
   return (
-    <div className="relative shadow-lg">
+    <div className="relative shadow-lg !overflow-visible">
       <Page
+        className="!overflow-visible"
         pageNumber={pageNumber}
         scale={scale}
         width={width}

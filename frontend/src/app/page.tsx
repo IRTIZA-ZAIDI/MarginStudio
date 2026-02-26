@@ -11,7 +11,8 @@ import { AssetDisplay } from "@/components/layout/AssetDisplay";
 import { useAppState } from "@/store/useAppState";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
-import { BookOpen, Sparkles } from "lucide-react";
+import { BookOpen, Sparkles, MessageSquare } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 const PDFRenderer = dynamic(() => import("@/components/pdf-stage/PDFRenderer").then(mod => mod.PDFRenderer), {
   ssr: false,
@@ -19,59 +20,50 @@ const PDFRenderer = dynamic(() => import("@/components/pdf-stage/PDFRenderer").t
 });
 
 export default function Home() {
-  const { fileUrl, assets } = useAppState();
-  const [activeView, setActiveView] = useState<'reader' | 'assets'>('reader');
+  const { fileUrl, assets, isSidebarOpen, toggleSidebar, activeTab, setActiveTab } = useAppState();
 
   if (!fileUrl) {
     return <LandingPage />;
   }
-
-  // Auto-switch to assets if first one is generated
-  const handleViewChange = (view: 'reader' | 'assets') => setActiveView(view);
 
   return (
     <div className="flex bg-background font-sans h-screen flex-col overflow-hidden text-foreground">
       <Header />
       <AnnotationToolbar />
       <div className="flex-1 overflow-hidden relative">
-        <MagicToolbar />
-        
-        {/* View Toggle (Floating) */}
-        {assets.length > 0 && (
-            <div className="absolute top-1/2 left-20 -translate-y-1/2 flex flex-col gap-2 z-[70] animate-in fade-in slide-in-from-left-4 duration-500">
-                <button 
-                    onClick={() => setActiveView('reader')}
-                    className={cn(
-                        "p-3 rounded-full shadow-2xl transition-all border",
-                        activeView === 'reader' ? "bg-primary text-primary-foreground border-primary" : "bg-background text-muted-foreground border-border hover:bg-secondary"
-                    )}
-                    title="PDF Reader"
-                >
-                    <BookOpen className="h-5 w-5" />
-                </button>
-                <button 
-                    onClick={() => setActiveView('assets')}
-                    className={cn(
-                        "p-3 rounded-full shadow-2xl transition-all border",
-                        activeView === 'assets' ? "bg-primary text-primary-foreground border-primary" : "bg-background text-muted-foreground border-border hover:bg-secondary"
-                    )}
-                    title="Studio Assets"
-                >
-                    <Sparkles className="h-5 w-5" />
-                </button>
-            </div>
-        )}
+        {/* Magic Toolbar will float over the active view */}
 
         <SplitView
           left={
             <div className="h-full overflow-hidden bg-zinc-50 dark:bg-zinc-950 border-r relative flex flex-col transition-all">
-               {activeView === 'reader' ? (
-                   <div className="flex-1 overflow-auto relative custom-scrollbar p-8 pt-4">
-                      <PDFRenderer url={fileUrl} />
-                   </div>
-               ) : (
-                   <AssetDisplay />
-               )}
+               
+               {/* Top Tabs for View Switching */}
+               <div className="flex bg-secondary p-1 rounded-full w-max mx-auto mt-6 mb-4 shadow-sm border border-border shrink-0 z-40 relative">
+                 <button 
+                   onClick={() => setActiveTab('reader')} 
+                   className={cn("px-5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider transition-all", activeTab === 'reader' ? 'bg-primary text-primary-foreground shadow' : 'text-muted-foreground hover:bg-background')}
+                 >
+                   PDF Document
+                 </button>
+                 <button 
+                   onClick={() => setActiveTab('assets')} 
+                   className={cn("px-5 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider flex gap-2 items-center transition-all", activeTab === 'assets' ? 'bg-primary text-primary-foreground shadow' : 'text-muted-foreground hover:bg-background')}
+                 >
+                   Magic Assets 
+                   {assets.length > 0 && <span className="bg-primary/20 text-primary px-1.5 rounded-sm h-4 flex items-center justify-center text-[10px]">{assets.length}</span>}
+                 </button>
+               </div>
+
+               <div className="flex-1 overflow-auto relative custom-scrollbar bg-[radial-gradient(#e5e7eb_1px,transparent_1px)] dark:bg-[radial-gradient(#1f2937_1px,transparent_1px)] [background-size:32px_32px]">
+                   <MagicToolbar />
+                   {activeTab === 'reader' ? (
+                       <div className="min-h-screen pb-32">
+                          <PDFRenderer url={fileUrl} />
+                       </div>
+                   ) : (
+                       <AssetDisplay />
+                   )}
+               </div>
             </div>
           }
           right={
@@ -80,6 +72,19 @@ export default function Home() {
             </div>
           }
         />
+
+        {/* Floating AI Toggle (When Sidebar is closed) - Positioned on the RIGHT */}
+        {!isSidebarOpen && (
+          <div className="absolute right-6 bottom-24 z-50 animate-in zoom-in-50 fade-in duration-300">
+            <Button
+              onClick={toggleSidebar}
+              className="h-14 w-14 rounded-full shadow-2xl bg-primary text-primary-foreground hover:scale-110 active:scale-95 transition-all group overflow-hidden border-2 border-white/20"
+            >
+              <div className="absolute inset-0 bg-gradient-to-tr from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              <MessageSquare className="h-6 w-6" />
+            </Button>
+          </div>
+        )}
       </div>
     </div>
   );
