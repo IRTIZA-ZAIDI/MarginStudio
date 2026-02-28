@@ -75,9 +75,15 @@ export interface GeneratedAsset {
   documentId?: string; // Which doc it was generated from
 }
 
+export interface WhiteboardConnection {
+  id: string;
+  fromId: string;
+  toId: string;
+}
+
 export interface WhiteboardElement {
   id: string;
-  type: 'image' | 'text' | 'note' | 'shape' | 'arrow' | 'line' | 'diamond';
+  type: 'image' | 'text' | 'note' | 'shape' | 'arrow' | 'line' | 'diamond' | 'ai_node' | 'trigger_node' | 'data_node' | 'utility_node';
   x: number;
   y: number;
   width?: number;
@@ -87,6 +93,8 @@ export interface WhiteboardElement {
   color?: string;
   rotation?: number;
   points?: { x: number; y: number }[];
+  subtitle?: string;
+  icon?: string;
 }
 
 export interface MagicOptions {
@@ -133,9 +141,12 @@ interface AppState {
   
   // Whiteboard
   whiteboardElements: WhiteboardElement[];
+  whiteboardConnections: WhiteboardConnection[];
   addWhiteboardElement: (el: WhiteboardElement) => void;
   updateWhiteboardElement: (id: string, updates: Partial<WhiteboardElement>) => void;
   removeWhiteboardElement: (id: string) => void;
+  addWhiteboardConnection: (conn: WhiteboardConnection) => void;
+  removeWhiteboardConnection: (id: string) => void;
 
   // History (Undo/Redo)
   history: Annotation[][];
@@ -191,6 +202,7 @@ export const useAppState = create<AppState>((set, get) => ({
   activeWorkspaceId: null, // Start at null for Dashboard
   isSignedIn: false,
   whiteboardElements: [],
+  whiteboardConnections: [],
   documents: [],
   activeDocumentId: null,
   scale: 1,
@@ -266,7 +278,14 @@ export const useAppState = create<AppState>((set, get) => ({
     whiteboardElements: state.whiteboardElements.map(el => el.id === id ? { ...el, ...updates } : el)
   })),
   removeWhiteboardElement: (id) => set((state) => ({
-    whiteboardElements: state.whiteboardElements.filter(el => el.id !== id)
+    whiteboardElements: state.whiteboardElements.filter(el => el.id !== id),
+    whiteboardConnections: state.whiteboardConnections.filter(c => c.fromId !== id && c.toId !== id)
+  })),
+  addWhiteboardConnection: (conn) => set((state) => ({
+    whiteboardConnections: [...state.whiteboardConnections, conn]
+  })),
+  removeWhiteboardConnection: (id) => set((state) => ({
+    whiteboardConnections: state.whiteboardConnections.filter(c => c.id !== id)
   })),
 
   saveToHistory: (stateOverride) => {

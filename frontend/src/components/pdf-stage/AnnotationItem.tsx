@@ -99,6 +99,7 @@ export function AnnotationItem({ annotation, width, height }: AnnotationItemProp
     if (toolMode === 'select') {
         e.stopPropagation();
         if (type === 'text' || type === 'sticky') {
+            e.preventDefault();
             setIsDragging(true);
             setDragStart({ x: e.clientX, y: e.clientY });
             setShowToolbar(true);
@@ -123,6 +124,7 @@ export function AnnotationItem({ annotation, width, height }: AnnotationItemProp
 
   const handleResizeStart = (e: React.MouseEvent) => {
     e.stopPropagation();
+    e.preventDefault();
     setIsResizing(true);
     setDragStart({ x: e.clientX, y: e.clientY });
   };
@@ -339,7 +341,7 @@ export function AnnotationItem({ annotation, width, height }: AnnotationItemProp
         <div
             ref={itemRef}
             className={cn(
-                "absolute text-sm font-medium leading-tight group p-1 transition-all rounded",
+                "absolute text-sm font-medium leading-tight group p-1 transition-all rounded select-none",
                 fontFamily || "font-sans",
                 toolMode === 'select' && "cursor-move border-2 border-transparent hover:border-primary/20 pointer-events-auto",
                 showToolbar && "border-primary/40 ring-4 ring-primary/5 shadow-lg",
@@ -402,7 +404,7 @@ export function AnnotationItem({ annotation, width, height }: AnnotationItemProp
         <div
             ref={itemRef}
             className={cn(
-                "absolute p-4 shadow-xl rounded-[24px] rounded-tr-none flex flex-col gap-2 transition-all group pointer-events-auto border-2 border-transparent",
+                "absolute p-4 shadow-xl rounded-[24px] rounded-tr-none flex flex-col gap-2 transition-all group pointer-events-auto border-2 border-transparent select-none",
                 fontFamily || "font-serif",
                 toolMode === 'select' && "cursor-move hover:border-primary/20",
                 showToolbar && "border-primary/40 ring-8 ring-primary/5 shadow-2xl",

@@ -3,7 +3,6 @@
 import dynamic from "next/dynamic";
 import { Header } from "@/components/layout/Header";
 import { AnnotationToolbar } from "@/components/layout/AnnotationToolbar";
-import { MagicToolbar } from "@/components/layout/MagicToolbar";
 import { SplitView } from "@/components/layout/SplitView";
 import { AISidebar } from "@/components/ai-sidebar/AISidebar";
 import { LandingPage } from "@/components/layout/LandingPage";
@@ -56,7 +55,7 @@ export default function Home() {
                  {[
                    { id: 'reader', icon: <BookOpen className="h-3.5 w-3.5" />, label: 'Document' },
                    { id: 'assets', icon: <Sparkles className="h-3.5 w-3.5" />, label: 'Magic Assets' },
-                   { id: 'whiteboard', icon: <Layout className="h-3.5 w-3.5" />, label: 'Studio Canvas' },
+                   { id: 'whiteboard', icon: <Layout className="h-3.5 w-3.5" />, label: 'AI Whiteboard' },
                    { id: 'notes', icon: <PenTool className="h-3.5 w-3.5" />, label: 'Research Notes' },
                  ].map((tab) => (
                    <button 
@@ -86,7 +85,6 @@ export default function Home() {
                           {activeDoc ? (
                             <>
                                 <PDFRenderer url={activeDoc.url} />
-                                <MagicToolbar />
                             </>
                           ) : (
                             <div className="flex items-center justify-center h-full text-muted-foreground uppercase text-[10px] font-black tracking-widest">
